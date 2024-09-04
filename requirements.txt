@@ -1,0 +1,6 @@
+gigachain_community==0.2.12
+aiogram==3.12.0
+gigachain_openai==0.1.22
+python-dotenv==1.0.1
+gigagraph==0.2.14
+gigachain_pinecone==0.1.3
