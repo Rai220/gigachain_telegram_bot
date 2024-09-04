@@ -66,7 +66,7 @@ async def handle_message(message: types.Message):
         await answer.delete()
         await message.answer(value["generation"])
     except Exception as e:
-        logging.error(f"Error processing user request: {e}")
+        logging.error(f"Error processing user request: {e}", exc_info=True)
         await message.answer(f"Произошла ошибка {e} при обработке вашего запроса. Пожалуйста, попробуйте еще раз.")
 
 async def main():
