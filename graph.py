@@ -40,27 +40,32 @@ MAIN_KNOWLAGE = ("Вот самые базовые знания по предм�
 
 # Data model
 class RouteQuery(BaseModel):
-    """Выбирает где осуществить поиск данных для ответа на вопрос: vectorstore (векторное хранилище знаний) или web_search (поиск в интернете)"""
+    """Выбирает где осуществить поиск данных для ответа на вопрос: vectorstore (векторное хранилище знаний), 
+    web_search (поиск в интернете) или self (ответ без дополнительных данных)"""
 
-    datasource: Literal["vectorstore", "web_search"] = Field(
+    datasource: Literal["vectorstore", "web_search", "self"] = Field(
         ...,
         description="Метод поиска",
     )
 
 
 # LLM with function call
-llm = GigaChat(model="GigaChat-Pro-Preview")
-# llm.verbose = True
+llm = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=False)
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
 # Prompt
-system = """Ты эксперт по маршрутизации пользовательских вопросов в базу данных (vectorstore) или веб-поиск (web_search).
+system = f"""Ты эксперт по маршрутизации пользовательских вопросов в базу данных (vectorstore), веб-поиск (web_search) или ответь сам (self)
+{MAIN_KNOWLAGE}
 Ты должен принять решения, где взять данные для ответа на вопрос пользователя.
 Используй vectorstore для ответов на вопросы, связанные GigaChat, GigaChain, GigaChat API, GigaGraph, LangChain, LangGraph 
 и другими техническими вопросами, которые могут быть связаны с работой с гигачатом, а также процессом подключения к нему, 
 интеграцией, стоимостью, заключением договоров и т.п. а также использованием библиотеки gigachain для работы с гигачатом (gigachat) и 
 другими большими языковыми моделями, эмбеддингами и т.д. Используй web_search в случаях, когда вопрос пользователя очевидно 
-не относится к GigaChat, LLM, AI, техническим проблемам с гигачатом, его АПИ, СДК, ключами, токенами и том подобным вещам."""
+не относится к GigaChat, LLM, AI, техническим проблемам с гигачатом, его АПИ, СДК, ключами, токенами и том подобным вещам.
+
+Если вопрос пользователя простой или это вообще не вопрос, а утверждение или реплика или приветстиве или не понятно что, 
+то используй self. Self будет означать, что на такой вопрос GigaChat ответит самостоятельно без использования внешних данных.
+"""
 route_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system),
@@ -87,7 +92,8 @@ class GradeDocuments(BaseModel):
 structured_llm_grader = llm.with_structured_output(GradeDocuments)
 
 # Prompt
-system = """Ты оцениваешь релевантность найденного документа по отношению к пользовательскому вопросу. \n 
+system = f"""Ты оцениваешь релевантность найденного документа по отношению к пользовательскому вопросу. \n 
+    {MAIN_KNOWLAGE}
     Если документ содержит ключевые слова или информацию, связанную с пользовательским вопросом, 
     оцени его как релевантный (yes). \n
     Это не должно быть строгим тестом. Цель состоит в том, чтобы отфильтровать ошибочные результаты. \n
@@ -104,9 +110,7 @@ grade_prompt = ChatPromptTemplate.from_messages(
 
 retrieval_grader = grade_prompt | structured_llm_grader
 
-# Prompt
-# prompt = hub.pull("rlm/rag-prompt")
-prompt = ChatPromptTemplate(
+support_prompt = ChatPromptTemplate(
     [
         (
             "system",
@@ -125,7 +129,7 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-rag_chain = prompt | llm | StrOutputParser()
+rag_chain = support_prompt | llm | StrOutputParser()
 
 ### Hallucination Grader
 
@@ -142,7 +146,8 @@ class GradeHallucinations(BaseModel):
 structured_llm_grader = llm.with_structured_output(GradeHallucinations)
 
 # Prompt
-system = """Ты оцениваешь, основана ли генерация модели на данных в документе. \n 
+system = f"""Ты оцениваешь, основана ли генерация модели на данных в документе. \n 
+    {MAIN_KNOWLAGE}
      Дай бинарную оценку yes или no. yes означает, что ответ основан на данных из документа."""
 hallucination_prompt = ChatPromptTemplate.from_messages(
     [
@@ -174,7 +179,8 @@ structured_llm_grader = llm.with_structured_output(GradeAnswer)
 
 # Prompt
 
-system = """Ты оцениваешь, отвечает ли ответ на вопрос / решает ли он вопрос. \n 
+system = f"""Ты оцениваешь, отвечает ли ответ на вопрос / решает ли он вопрос. \n 
+{MAIN_KNOWLAGE}
      Дай бинарную оценку yes или no. yes означает, что ответ решает вопрос."""
 answer_prompt = ChatPromptTemplate.from_messages(
     [
@@ -195,7 +201,8 @@ answer_grader = answer_prompt | structured_llm_grader
 
 # Prompt
 
-system = """Ты переписываешь вопросы, преобразуя входной вопрос в улучшенную версию, 
+system = f"""Ты переписываешь вопросы, преобразуя входной вопрос в улучшенную версию, 
+{MAIN_KNOWLAGE}
 оптимизированную для поиска в векторной базе знаний (vectorstore). 
 Посмотри на входные данные и постарайся понять основное семантическое намерение / значение."""
 re_write_prompt = ChatPromptTemplate.from_messages(
@@ -252,18 +259,8 @@ def retrieve(state):
 
 
 def generate(state):
-    """
-    Generate answer
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): New key added to state, generation, that contains LLM generation
-    """
-    # print("---ГЕНЕРАЦИЯ ОТВЕТА---")
     question = state["question"]
-    documents = state["documents"]
+    documents = state.get("documents", [])
 
     # RAG generation
     generation = rag_chain.invoke({"context": documents, "question": question})
@@ -336,7 +333,9 @@ def route_question(state):
         search_count = 0
     if not retrieve_count:
         retrieve_count = 0
-    if source.datasource == "web_search" and state.get("search_count", 0) < 3:
+    if source.datasource == "self":
+        return "self"
+    elif source.datasource == "web_search" and state.get("search_count", 0) < 3:
         return "web_search"
     elif source.datasource == "vectorstore" and state.get("retrieve_count", 0) < 3:
         return "vectorstore"
@@ -346,7 +345,7 @@ def route_question(state):
         if retrieve_count < 3:
             return "vectorstore"
         else:
-            raise ValueError("No more searches allowed")
+            return "self"
 
 
 def decide_to_generate(state):
@@ -402,6 +401,7 @@ workflow = StateGraph(GraphState)
 # Define the nodes
 workflow.add_node("web_search", web_search)  # web search
 workflow.add_node("retrieve", retrieve)  # retrieve
+workflow.add_node("self", generate)  # retrieve
 workflow.add_node("grade_documents", grade_documents)  # grade documents
 workflow.add_node("generate", generate)  # generatae
 workflow.add_node("transform_query", transform_query)  # transform_query
@@ -413,8 +413,10 @@ workflow.add_conditional_edges(
     {
         "web_search": "web_search",
         "vectorstore": "retrieve",
+        "self": "self",
     },
 )
+workflow.add_edge("self", END)
 workflow.add_edge("web_search", "generate")
 workflow.add_edge("retrieve", "grade_documents")
 workflow.add_conditional_edges(
