@@ -8,12 +8,12 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-# from langchain_openai.chat_models import ChatOpenAI
 from langchain_pinecone import PineconeVectorStore
-### Router
 from langgraph.graph import END, START, StateGraph
-from langgraph.pregel.types import RetryPolicy
 from pinecone import Pinecone
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
