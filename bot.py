@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 import asyncio
 import os
 from dotenv import load_dotenv, find_dotenv
-from graph import workflow
+from graph import graph
 import logging
 
 load_dotenv(find_dotenv())
@@ -57,7 +57,6 @@ async def handle_message(message: types.Message):
         answer = await message.answer("Обрабатываю ваш запрос...")
         inputs = {"question": user_message}
         last_step = None
-        graph = workflow.compile()
         for output in graph.stream(inputs):
             for key, value in output.items():
                 if key == last_step:
