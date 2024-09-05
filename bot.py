@@ -35,7 +35,6 @@ async def handle_message(message: types.Message):
 
     # Проверяем, было ли упоминание бота в канале или сообщение отправлено напрямую
     if message.chat.type in ("group", "supergroup", "channel"):
-        # Проверяем упоминание
         if not (f"@{bot_username}" in user_message):
             return  # Игнорируем сообщение, если бот не был упомянут
 
@@ -51,7 +50,6 @@ async def handle_message(message: types.Message):
         return
 
     try:
-        # Log the user's request
         logging.warning(
             f"User request: {user_message}, from {message.from_user.id} {message.from_user.username}"
         )
