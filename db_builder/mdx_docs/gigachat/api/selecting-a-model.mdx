@@ -1,0 +1,62 @@
+---
+lastUpdateDate: 1 июля 2024
+---
+
+# Выбор модели для генерации {#vybor-modeli-dlya-generatsii}
+
+При работе с GigaChat с помощью API и SDK нужно выбирать модель, к которой будет сделан запрос.
+Разные модели можно использовать в разных сценариях.
+Подробное описание моделей — в разделе [Модели GigaChat](/ru/gigachat/models).
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+Чтобы задать модель, передайте ее название в поле `model`, в запросе [`POST /chat/completions`](/ru/gigachat/api/reference/rest/post-chat):
+
+```sh
+curl -L -X POST 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+-H 'Content-Type: application/json' \
+-H 'Accept: application/json' \
+-H 'Authorization: Bearer <токен_доступа>' \
+--data-raw '{
+  "model": "<название_модели>",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Привет! Расскажи о себе."
+    }
+  ],
+  "n": 1,
+  "stream": false,
+  "max_tokens": 512,
+  "repetition_penalty": 1,
+  "update_interval": 0
+}'
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+GigaChain по умолчанию работает с базовой моделью `GigaChat`.
+Чтобы явно задать модель, передайте параметр `model` при инициализации GigaChat:
+
+```py
+from langchain.chat_models.gigachat import GigaChat
+
+giga = GigaChat(credentials='<авторизационные_данные>', model='<название_модели>', verify_ssl_certs=False)
+```
+
+</TabItem>
+</Tabs>
+
+Возможные значения поля `model`:
+
+* `GigaChat` — базовая модель для решения более простых задач;
+* `GigaChat-Plus` — модель с увеличенным контекстом. Подходит, например, для суммаризации больших документов;
+* `GigaChat-Pro` — модель лучше следует сложным инструкциям и может выполнять более комплексные задачи.
+
+## Смотрите также {#smotrite-takzhe}
+
+* [Модели GigaChat](/ru/gigachat/models)
+* [Тарифы и оплата](/ru/gigachat/api/tariffs)
+* [Быстрый старт GigaChain](/ru/gigachain/get-started/quickstart)

@@ -23,6 +23,7 @@ emojis = {
     "generate": "📚🧠",
     "self": "🧠🧠",
     "transform_query": "🔄",
+    "finalizing": "✅",
 }
 
 

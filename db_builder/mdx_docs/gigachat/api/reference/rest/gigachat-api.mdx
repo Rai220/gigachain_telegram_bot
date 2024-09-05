@@ -1,0 +1,106 @@
+---
+id: gigachat-api
+title: "GigaChat API"
+description: "Справочная документация по REST API нейросетевой модели GigaChat."
+sidebar_label: Introduction
+sidebar_position: 0
+hide_title: true
+custom_edit_url: null
+lastUpdateDate: 5 августа 2024
+---
+
+import ApiLogo from "@theme/ApiLogo";
+import SchemaTabs from "@theme/SchemaTabs";
+import TabItem from "@theme/TabItem";
+import Export from "@theme/ApiDemoPanel/Export";
+
+<h1 className={"openapi__heading"}>GigaChat API</h1>
+
+Справочная документация по REST API нейросетевой модели GigaChat.
+
+О стоимости и условиях использования GigaChat API вы можете узнать в разделе [Тарифы и оплата](/ru/gigachat/api/tariffs).
+
+## Получение токена доступа и авторизация запросов {#poluchenie-tokena-dostupa-i-avtorizatsiya-zaprosov}
+
+Запросы к GigaChat API передаются по адресу `https://gigachat.devices.sberbank.ru/` и авторизуются с помощью токена доступа по протоколу [OAuth 2.0](https://tools.ietf.org/html/rfc6749).
+Токен доступа передается в заголовке `Authorization`:
+
+```sh
+curl -L -X GET 'https://gigachat.devices.sberbank.ru/api/v1/models' \
+-H 'Accept: application/json' \
+-H 'Authorization: Bearer <токен_доступа>'
+```
+
+:::tip
+
+Вы также можете передавать запросы к [моделям в раннем доступе](/ru/gigachat/models#obrashenie-k-modelyam-rannego-dostupa).
+Их возможности могут отличаться от моделей, доступных в промышленном контуре.
+
+Для обращения к моделям в раннем доступе передавайте запросы по адресу `https://gigachat-preview.devices.sberbank.ru/`.
+
+:::
+
+Чтобы получить токен, отправьте запрос [POST /api/v2/oauth](/ru/gigachat/api/reference/rest/post-token):
+
+```sh
+curl -L -X POST 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-H 'Accept: application/json' \
+-H 'RqUID: <идентификатор_запроса>' \
+-H 'Authorization: Basic <авторизационные_данные>' \
+--data-urlencode 'scope=GIGACHAT_API_PERS'
+```
+
+Где:
+
+* `RqUID` — обязательный заголовок, в котором нужно передать уникальный идентификатор запроса в формате `uuid4`.
+* `Authorization` — обязательный заголовок, в котором нужно передать авторизационные данные — строку, полученную в результате кодирования в base64 идентификатора (Client ID) и клиентского ключа (Client Secret) API.
+* `scope` — обязательное поле в теле запроса, которое указывает к какой версии API выполняется запрос. Возможные значения:
+  * `GIGACHAT_API_PERS` — доступ для физических лиц.
+  * `GIGACHAT_API_B2B` — доступ для ИП и юридических лиц [по предоплате](/ru/gigachat/api/tariffs#platnye-pakety-pri-rabote-po-predoplatnoy-sheme).
+  * `GIGACHAT_API_CORP` — доступ для ИП и юридических лиц [по постоплате](/ru/gigachat/api/legal-postpaid).
+
+При успешном выполнении запроса GigaChat API вернет токен доступа, который действует в течение 30 минут:
+
+```json
+{
+  "access_token": "eyJhbGci3iJkaXIiLCJlbmMiOiJBMTI4R0NNIiwidHlwIjoiSldUIn0..Dx7iF7cCxL8SSTKx.Uu9bPK3tPe_crdhOJqU3fmgJo_Ffvt4UsbTG6Nn0CHghuZgA4mD9qiUiSVC--okoGFkjO77W.vjYrk3T7vGM6SoxytPkDJw",
+  "expires_at": 1679471442
+}
+```
+
+:::note
+
+Как получить токен и авторизационные данные (Client Id и Client Secret) читайте в разделах [Быстрый старт для физических лиц](/ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юридических лиц](/ru/gigachat/legal-quickstart).
+
+:::
+
+## Обращение к моделям в раннем доступе {#obrashenie-k-modelyam-v-rannem-dostupe}
+
+Модели для генерации GigaChat регулярно обновляются и у них появляются новые возможности, например, вызов функций.
+В таких случаях новые версии моделей некоторое время доступны в раннем доступе.
+
+Для обращения к таким моделям используйте адрес `https://gigachat-preview.devices.sberbank.ru/`, а к названию модели, которое передается в поле `model`, добавьте постфикс `-preview`.
+
+Подробнее — в разделе [Модели GigaChat](/ru/gigachat/models#obrashenie-k-modelyam-rannego-dostupa).
+
+
+<div style={{"marginBottom":"2rem"}}><h2 id={"authentication"} style={{"marginBottom":"1rem"}}>Authentication</h2><SchemaTabs className={"openapi-tabs__security-schemes"}><TabItem label={"HTTP: Basic Auth"} value={"Базовая аутентификация"}>
+
+Базовая (Basic) аутентификация с помощью авторизационных данных — строки, полученной в результате кодирования в base64 идентификатора (Client ID) и клиентского ключа (Client Secret) API.
+
+Авторизационные данные передаются в заголовке `Authorization`, в запросе на [получение токена доступа](/ru/gigachat/api/reference/rest/post-token).
+
+<Admonition type="note">
+
+Как получить токен и авторизационные данные (Client Id и Client Secret) читайте в разделах [Быстрый старт для физических лиц](/ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юридических лиц](/ru/gigachat/legal-quickstart).
+
+</Admonition>
+
+
+<div><table><tbody><tr><th>Security Scheme Type:</th><td>http</td></tr><tr><th>HTTP Authorization Scheme:</th><td>basic</td></tr></tbody></table></div></TabItem><TabItem label={"HTTP: Bearer Auth"} value={"Токен доступа"}>
+
+Аутентификация с помощью токена доступа. Используется во всех запросах к GigaChat API, кроме запроса на [получение токена доступа](/ru/gigachat/api/reference/rest/post-token).
+
+<div><table><tbody><tr><th>Security Scheme Type:</th><td>http</td></tr><tr><th>HTTP Authorization Scheme:</th><td>bearer</td></tr><tr><th>Bearer format:</th><td>JWT</td></tr></tbody></table></div></TabItem></SchemaTabs></div><div style={{"display":"flex","flexDirection":"column","marginBottom":"var(--ifm-paragraph-margin-bottom)"}}></div>
+      

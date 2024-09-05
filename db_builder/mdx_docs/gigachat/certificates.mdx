@@ -1,0 +1,114 @@
+---
+seoTitle: Использование сертификатов НУЦ Минцифры в GigaChat
+description: Раздел содержит инструкции по установке НУЦ Минцифры в разных операционных системах. Установка нужна, чтобы сохранить возможность работы с сервисом GigaChat.
+keywords: ["установка сертификатов в windows", "установка сертификатов в mac os", "установка сертификатов в linux", "нейросетевая моедель"]
+lastUpdateDate: 24 июня 2024
+---
+
+# Использование сертификатов НУЦ Минцифры в GigaChat  {#ispolzovanie-sertifikatov-nuts-mintsifry-v-giga-chat}
+
+TLS-сертификат был заменен на сертификаты НУЦ Минцифры. Чтобы обмен данными вашего приложения с сервисом GigaChat был и дальше возможен, установите публичный сертификат НУЦ Минцифры в качестве доверенного в коде приложения или на уровне операционной системы.
+
+## Установка в коде приложения {#ustanovka-v-kode-prilozheniya}
+
+Чтобы установить публичный сертификат НУЦ Минцифры в качестве доверенного в коде приложения:
+
+1. Перейдите на [портал Госуслуг](https://www.gosuslugi.ru/crt) и скачайте сертификат для вашей ОС.
+2. Укажите в коде вашего приложения путь к сертификату:
+   * для Python — опция командной строки `--ca`,
+   * для C++ — переменная окружения `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH`.
+
+Пример установки сертификата в коде JavaScript:
+
+```js
+const path = require('path')
+
+process.env.NODE_EXTRA_CA_CERTS= path.resolve(__dirname, 'dir', 'with', 'certs')
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+```
+
+## Установка на уровне ОС {#ustanovka-na-urovne-os}
+
+### ОС Windows и MacOS {#os-windows-i-mac-os}
+
+Перейдите на [портал Госуслуг](https://www.gosuslugi.ru/crt), скачайте сертификат для вашей ОС и следуйте инструкциям по установке.
+
+### ОС Linux {#ustanovka-sertifikatov-dlya-os-linux}
+
+Перейдите на [портал Госуслуг](https://www.gosuslugi.ru/crt) и скачайте сертификаты для Linux или загрузите их по [прямой ссылке](https://gu-st.ru/content/Other/doc/russiantrustedca.pem).
+
+Затем установите их на компьютер.
+
+:::note
+
+Сертификаты для MacOS имеют расширение `.pem`, перед установкой их нужно конвертировать в `.crt`.
+
+:::
+
+#### Примеры установки сертификатов в разных версиях Linux {#primery-ustanovki-sertifikatov-v-raznyh-versiyah-linux}
+
+<Tabs queryString="OS">
+<TabItem value="debian-ubuntu" label="Debian и Ubuntu" default>
+
+1. Запустите в терминале команду конвертации:
+
+   ```sh
+   openssl x509 -outform der -in russiantrustedca.pem -out russiantrustedca.crt
+   ```
+
+2. Добавьте сертификат в хранилище доверенных сертификатов. Для этого от имени суперпользователя запустите команду `cp`, скопируйте файл с сертификатом в директорию `/usr/local/share/ca-certificates/`:
+
+   ```sh
+   sudo cp <path>/russiantrustedca.crt /usr/local/share/ca-certificates/
+   ```
+
+3. Для обновления хранилища доверенных сертификатов от имени суперпользователя запустите команду `update-ca-certificates`:
+
+   ```sh
+   sudo update-ca-certificates
+   ```
+
+</TabItem>
+<TabItem value="redhat-enterprise-linux-7" label="RedHat Enterprise Linux 7" >
+
+1. Запустите в терминале команду конвертации:
+
+   ```sh
+   openssl x509 -outform der -in russiantrustedca.pem -out russiantrustedca.crt
+   ```
+
+2. Добавьте сертификат в хранилище доверенных сертификатов. Для этого от имени суперпользователя запустите команду `cp`, скопируйте файл с сертификатом в директорию `/etc/pki/ca-trust/source/anchors/`:
+
+   ```sh
+   sudo cp <path>/russiantrustedca.crt /etc/pki/ca-trust/source/anchors/
+   ```
+
+3. Для обновления хранилища доверенных сертификатов от имени суперпользователя запустите команду `update-ca-trust`:
+
+   ```sh
+   sudo update-ca-trust
+   ```
+
+</TabItem>
+<TabItem value="arch-linux" label="Arch Linux" default>
+
+1. Запустите в терминале команду конвертации:
+
+   ```sh
+   openssl x509 -outform der -in russiantrustedca.pem -out russiantrustedca.crt
+   ```
+
+2. Добавьте сертификат в хранилище доверенных сертификатов. Для этого от имени суперпользователя запустите команду `cp`, скопируйте файл с сертификатом в директорию `/etc/ca-certificates/trust-source/anchors/`:
+
+   ```sh
+   sudo cp <path>/russiantrustedca.crt /etc/ca-certificates/trust-source/anchors/
+   ```
+
+3. Для обновления хранилища доверенных сертификатов от имени суперпользователя запустите команду `update-ca-trust`:
+
+   ```sh
+   sudo update-ca-trust
+   ```
+
+</TabItem>
+</Tabs>

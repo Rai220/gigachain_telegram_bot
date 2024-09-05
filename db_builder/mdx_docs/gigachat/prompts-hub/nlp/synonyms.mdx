@@ -1,0 +1,85 @@
+---
+lastUpdateDate: 8 августа 2024
+---
+
+# Генерация синонимов {#generatsiya-sinonimov}
+
+Пример промпта для генерации синонимов.
+Промпт содержит инструкцию по количеству синонимов и формату ответа, а также примеры синонимов.
+
+## Структура промпта {#struktura-prompta}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```json
+{
+  "model": "GigaChat",
+  "messages": [
+        {
+            "role": "system",
+            "content": "Сгенерируй от 5 до 10 синонимов для слова \"кошка\". Примеры синонимов: \"кот\", \"котенок\". Результат верни в формате JSON-списка без каких-либо пояснений, например, [\"синоним1\", \"синоним2\", \"синоним3\", \"синоним4\"]. Не повторяй фразы из примера и не дублируй фразы."
+        },
+    ],
+}
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```yaml
+input_variables: [dataset_size_min, dataset_size_max, subject, examples]
+output_parser: null
+template: 'Сгенерируй от {dataset_size_min} до {dataset_size_max} синонимов для слова "{subject}". Примеры фраз: {examples}. Результат верни в формате JSON-списка без каких-либо пояснений, например, ["синоним1", "синоним2", "синоним3", "синоним4"]. Не повторяй фразы из примера и не дублируй фразы.'
+template_format: f-string
+_type: prompt
+```
+
+</TabItem>
+</Tabs>
+
+## Пример запроса {#primer-zaprosa}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```sh
+curl --location 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: <токен_доступа>' \
+--data '{
+  "model": "GigaChat", 
+  "temperature": 0.87, 
+  "top_p": 0.47, 
+  "n": 1, 
+  "max_tokens": 512, 
+  "repetition_penalty": 1.07, 
+  "stream": false, 
+  "update_interval": 0, 
+    "messages": [
+        {
+            "role": "system",
+            "content": "Сгенерируй от 5 до 10 синонимов для слова \"кошка\". Примеры синонимов: \"кот\", \"котенок\". Результат верни в формате JSON-списка без каких-либо пояснений, например, [\"синоним1\", \"синоним2\", \"синоним3\", \"синоним4\"]. Не повторяй фразы из примера и не дублируй фразы."
+        },
+    ]
+}'
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```python
+from langchain.prompts import load_prompt
+from langchain.chains import LLMChain
+from langchain.chat_models.gigachat import GigaChat
+
+giga = GigaChat(credentials="<авторизационные_данные>")
+synonyms_with_examples = load_prompt('lc://prompts/synonyms/synonyms_generation_with_examples.yaml')
+text = synonyms_with_examples.format(dataset_size_min=5,
+                        dataset_size_max=10,
+                        subject="кошка",
+                        examples='["кот", "котенок"]')
+```
+
+</TabItem>
+</Tabs>

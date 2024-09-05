@@ -1,0 +1,153 @@
+---
+lastUpdateDate: 19 июля 2024
+---
+
+import TesterSecretGeneration from '/docs/ru/includes/gigachat/_tester-secret-generation.mdx';
+
+# Быстрый старт для физических лиц {#bystryy-start-dlya-fizicheskih-lits}
+
+import QuickStartIntro from '/docs/ru/includes/gigachat/_quickstart-intro.mdx';
+
+<QuickStartIntro />
+
+## Шаг 1. Создайте проект GigaChat API {#shag-1-sozdayte-proekt-giga-chat-api}
+
+Проект GigaChat API нужен для получения авторизационных данных, а также для управления платными опциями.
+С помощью авторизационных данных вы можете получить токен доступа для авторизации запросов к API.
+
+import AuthData from '/docs/ru/includes/gigachat/_auth-data.mdx';
+
+<AuthData />
+
+:::note
+
+Если у вас уже есть личный кабинет, авторизуйтесь с помощью SberID или СберБизнес ID и создайте проект GigaChat API по [ссылке](https://developers.sber.ru/studio/workspaces/my-space/get/gigachat-api).
+
+:::
+
+Если у вас нет личного кабинета, для создания проекта:
+
+1. Зарегистрируйтесь в [личном кабинете](https://developers.sber.ru/studio/login), используя свой аккаунт Сбер ID.
+2. Нажмите кнопку **Создать проект** в левом меню.
+3. Выберите **GigaChat API** в разделе **AI-модели**.
+4. Ознакомьтесь и примите условия [пользовательского соглашения](/ru/policies/gigachat-agreement/beta).
+5. В открывшемся окне введите название проекта.
+
+   В интерфейсе проекта можно:
+
+   * Ознакомиться с условиями действующего тарифа. Каждому новому пользователю по умолчанию подключается тариф Freemium. Об условиях тарифа и доступных тарифных планах читайте в разделе [Тарифы и оплата](/ru/gigachat/api/tariffs).
+   * Приобрести дополнительные пакеты токенов.
+   * Узнать свой идентификатор — значение поля **Client ID** в панели справа.
+   * Узнать версию API, к которой предоставляется доступ. Версия указана в поле **Scope** в панели справа. Для физических лиц значение поля — `GIGACHAT_API_PERS`.
+   * Сгенерировать клиентский ключ.
+
+6. Для генерации клиентского ключа нажмите кнопку **Сгенерировать новый Client Secret**.
+   
+   <TesterSecretGeneration />
+
+В открывшемся окне скопируйте и сохраните значение полей **Client Secret** и **Авторизационные данные**.
+
+<Image img={require('./api/images/client-secret.png')} width={300} alt="Получение авторизационных данных" />
+
+:::caution
+
+Клиентский ключ, а следовательно и авторизационные данные, отображаются только один раз и не хранятся в личном кабинете.
+
+При компрометации или утере клиентского ключа или авторизационных данных вы можете сгенерировать новое значение.
+
+:::
+
+## Шаг 2. Получение токена доступа {#shag-2-poluchenie-tokena-dostupa}
+
+Токен доступа нужен для авторизации запросов к GigaChat API по Bearer-схеме.
+Токен получается в обмен на авторизационные данные с помощью запроса [`POST /api/v2/oauth`](/ru/gigachat/api/reference/rest/post-token).
+Токен действителен в течение 30 минут.
+
+Пример запроса для получения токена доступа:
+
+<Tabs queryString="tool">
+<TabItem value="curl" label="cURL" default>
+
+```sh
+curl -L -X POST 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-H 'Accept: application/json' \
+-H 'RqUID: <идентификатор_запроса>' \
+-H 'Authorization: Basic <авторизационные_данные>' \
+--data-urlencode 'scope=GIGACHAT_API_PERS'
+```
+
+</TabItem>
+<TabItem value="python" label="Python" >
+
+```py
+import requests
+
+url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+payload='scope=GIGACHAT_API_PERS'
+headers = {
+  'Content-Type': 'application/x-www-form-urlencoded',
+  'Accept': 'application/json',
+  'RqUID': 'идентификатор_запроса',
+  'Authorization': 'Basic <авторизацонные_данные>'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+```
+
+</TabItem>
+</Tabs>
+
+Пример ответа:
+
+```json
+{
+  "access_token": "<токен_доступа>",
+  "expires_at": 1706026848841
+}
+```
+
+:::note
+
+В [справочной документации](/ru/gigachat/api/reference/rest/post-token) вы найдете подробное описание параметров запроса и ответа.
+
+Также вы сможете сгенерировать токен доступа с помощью своего идентификатора (Client ID) и клиентского ключа (Client Secret) в консоли.
+
+<Image img={require('./images/get-token-basic-auth.png')} width={300} alt="Генерация токена в консоли документации" />
+
+:::
+
+Используйте полученный токен доступа для авторизации запросов к GigaChat API.
+
+## Шаг 3. Запросы к GigaChat API {#shag-3-zaprosy-k-giga-chat-api}
+
+import RequestIntro from '/docs/ru/includes/gigachat/_request-intro.mdx';
+
+<RequestIntro />
+
+### Генерация текста и изображений {#generatsiya-teksta}
+
+import TextGeneration from '/docs/ru/includes/gigachat/_text-generation.mdx';
+
+<TextGeneration />
+
+### Создание эмбеддинга {#sozdanie-embeddinga}
+
+import QuickstartEmbedding from '/docs/ru/includes/gigachat/_quickstart-embedding.mdx';
+
+<QuickstartEmbedding />
+
+## Шаг 4. Использование GigaChat SDK (GigaChain) {#shag-4-ispolzovanie-giga-chat-sdk-giga-chain}
+
+import QuickstartGigaChain from '/docs/ru/includes/gigachat/_quickstart-gigachain.mdx';
+
+<QuickstartGigaChain />
+
+## Смотрите также {#smotrite-takzhe}
+
+* [Документация GigaChat API](/ru/gigachat/api/overview)
+* [Документация GigaChain](/ru/gigachain/overview)
+* [Руководства по работе с API](/ru/gigachat/api/selecting-a-model)

@@ -1,0 +1,113 @@
+---
+lastUpdateDate: 4 апреля 2024
+---
+
+# Генерация разных вариантов вопросов {#generatsiya-raznyh-variantov-voprosov}
+
+Пример промпта для генерации различных вариаций вопроса.
+
+## Структура промпта {#struktura-prompta}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```json
+{
+  "model": "GigaChat",
+  "messages": [
+        {
+            "role": "system",
+            "content": "Ты эксперт по страхованию.\nТвоя задача — сгенерировать 3 разных сокращенных версий вопроса, для поиска по векторной базе данных.\nГенерируя разные версии вопроса пользователя,твоя цель — помочь найти его в страховом договоре.\nИспользуй юридический лексикон для этого.\nПредоставь вопросы в виде списка JSON.\n\nПример:\n[\"Вопрос1\", \"Вопрос2\"]"
+        },
+        {
+            "role": "user",
+            "content": "<Текст вопроса>"
+        }
+    ],
+}
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```yaml
+input_variables: [question]
+output_parser: null
+template: 'Ты эксперт по страхованию.
+Твоя задача — сгенерировать 3 разных сокращенных версий вопроса, для поиска по векторной базе данных.
+Генерируя разные версии вопроса пользователя, твоя цель — помочь найти его в страховом договоре.
+Используй для этого юридический лексикон.
+Предоставь вопросы в виде списка JSON.
+
+Пример:
+["Вопрос1", "Вопрос2"]
+
+Вопрос: [{question}]
+AI:'
+template_format: f-string
+_type: prompt
+```
+
+</TabItem>
+</Tabs>
+
+## Пример запроса {#primer-zaprosa}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```sh
+curl --location 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: <токен_доступа>' \
+--data '{
+  "model": "GigaChat", 
+  "temperature": 0.87, 
+  "top_p": 0.47, 
+  "n": 1, 
+  "max_tokens": 512, 
+  "repetition_penalty": 1.07, 
+  "stream": false, 
+  "update_interval": 0, 
+    "messages": [
+        {
+           "model": "GigaChat",
+           "messages": [
+                 {
+                     "role": "system",
+                     "content": "Ты эксперт по страхованию.\nТвоя задача — сгенерировать 3 разных сокращенных версий вопроса, для поиска по векторной базе данных.\nГенерируя разные версии вопроса пользователя,твоя цель — помочь найти его в страховом договоре.\nИспользуй юридический лексикон для этого.\nПредоставь вопросы в виде списка JSON.\n\nПример:\n[\"Вопрос1\", \"Вопрос2\"]"
+                 },
+                 {
+                     "role": "user",
+                     "content": "<Текст вопроса>"
+                 }
+             ],
+         }
+    ]
+}'
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```python
+from langchain.prompts import load_prompt
+from langchain.chains import LLMChain
+from langchain.chat_models.gigachat import GigaChat
+from langchain.retrievers.multi_query import JSONLineListOutputParser
+
+giga = GigaChat(credentials="<авторизационные_данные>")
+insurance_prompt = load_prompt(
+    'lc://prompts/retrievers/multi_query/insurance_agent.yaml'
+)
+llm_chain = LLMChain(
+    llm=giga,
+    prompt=insurance_prompt,
+    output_parser=JSONLineListOutputParser(),
+)
+
+print(llm_chain.run(question="Страхуются ли музыкальные инструменты?"))
+```
+
+</TabItem>
+</Tabs>

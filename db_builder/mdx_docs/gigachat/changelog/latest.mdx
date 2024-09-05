@@ -1,0 +1,118 @@
+---
+lastUpdateDate: 9 августа 2024
+---
+
+# История обновлений {#istoriya-obnovleniy}
+
+## 2024 {#2024}
+
+### Август {#avgust}
+
+#### 09.08.2024 {#09-08-2024}
+
+* Добавлены примеры [описания составных функций](/ru/gigachat/api/function-calling#functions-descriptions-example).
+
+### Июль {#iyul}
+
+#### 30.07.2024 {#30-07-2024}
+
+* Добавлена возможность отправлять запросы к новым версиям моделей, которые находятся в [раннем доступе](/ru/gigachat/models#obrashenie-k-modelyam-rannego-dostupa). Ранний доступ позволяет самостоятельно убедиться в повышенной производительности и ознакомиться с новыми возможностями моделей.
+* Для [сохранения контекста при работе с функциями](/ru/gigachat/api/function-calling#c-pomoshyu-polya-functionsstateid) добавлено новое поле `functions_state_id`. В будущем поле `functions_state_id` заменит массив `data_for_context`.
+
+#### 25.07.2024 {#25-07-2024}
+
+* Добавлена возможность использовать GigaChat API по предоплатной схеме. Для этого нужно создать [корпоративное пространство с поддержкой работы по предоплате](/ru/va/about/legal-entities/corporate-space#korporativnoe-predoplata). Для тарификации по предоплатной схеме запросы нужно отправлять к соответствующей версии API `scope=GIGACHAT_API_B2B`. Подробнее — в [быстром старте для ИП и юрлиц](/ru/gigachat/legal-quickstart#shag-1-otpravte-zayavku-na-dostup-k-proektu-giga-chat-api).
+
+#### 05.07.2024 {#05-07-2024}
+
+* Параметр `n` ([количество вариантов ответов модели](/ru/gigachat/api/reference/rest/post-chat)) отмечен как deprecated. После отключения параметра все модели будут возвращать только один вариант ответа.
+
+#### 01.07.2024 {#01-07-2024}
+
+* Добавлены образцы описания функций
+
+### Июнь {#iyun}
+
+### Май {#may}
+
+#### 22.05.2024 {#22-05-2024}
+
+* Теперь во все модели добавлена поддержка функций, поэтому обновлена документация по [созданию изображений](/ru/gigachat/api/images-generation) — оставлено описание создания изображения только с помощью встроенной функции.
+
+### Март {#mart}
+
+#### 27.03.2024 {#27-03-2024}
+
+* Добавлена возможность [работать со встроенными и собственными функциями](/ru/gigachat/api/function-calling).
+
+#### 25.03.2024 {#25-03-2024}
+
+* Переработан [раздел с примерами промптов](/ru/gigachat/prompts-hub/overview). Добавлена новая разводящая страница с фильтрацией промптов по категориям.
+
+#### 22.03.2024 {#22-03-2024}
+
+* Опубликована английская версия [документации GigaChain](/ru/gigachain/overview). 
+
+#### 19.03.2024 {#19-03-2024}
+
+* Добавлено [описание мониторинга потребления токенов](/ru/gigachat/api/token-consumption), доступное для ИП и юридических лиц.
+
+### Февраль {#fevral}
+
+#### 14.02.2024 {#14-02-2024}
+
+* Описан [выбор моделей с помощью API и SDK](/ru/gigachat/api/selecting-a-model).
+
+#### 9.02.2024 {#9-02-2024}
+
+* Добавлены разделы [Быстрый старт для физлиц](ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юрлиц](/ru/gigachat/legal-quickstart).
+* Описана возможность [отключать цензора](/ru/gigachat/limitations#tematicheskie-ogranicheniya-zaprosov) при работе с версией API для ИП и юридических лиц.
+
+#### 7.02.2024 {#7-02-2024}
+
+* Добавлены промпты для обработки текстов и генерации:
+
+  * [перевод](/ru/gigachat/prompts-hub/content/translation);
+  * [стилизация](/ru/gigachat/prompts-hub/content/text-rewrite);
+  * [генерация таблиц](/ru/gigachat/prompts-hub/content/table-generation);
+  * [генерация описания товаров](/ru/gigachat/prompts-hub/content/product-description);
+  * [суммаризация](/ru/gigachat/prompts-hub/summarization/large-texts).
+
+#### 6.02.2024 {#6-02-2024}
+
+* Описаны доступные [модели GigaChat](/ru/gigachat/models).
+
+### Январь {#yanvar}
+
+#### 19.01.2024 {#19-01-2024}
+
+* Обновили структуру документации.
+* Обновили дизайн и функциональность [справки REST API GigaChat](/ru/gigachat/api/reference/rest/gigachat-api). В новой документации появилась возможность отправлять запросы к API.
+
+#### 15.01.2024 {#15-01-2024}
+
+* GigaChat научился создавать векторное представление текста (*эмбеддинги*). О работе с эмбеддингами с помощью GigaChat API и GigaChain — в разделе [Векторное представление текста](/ru/gigachat/api/embeddings).
+* Добавлена возможность [создавать изображения с помощью GigaChat API](/ru/gigachat/api/images-generation).
+
+#### 12.01.2024 {#12-01-2024}
+
+Опубликован [каталог промптов](/ru/gigachat/prompts-hub/overview).
+
+## 2023 {#2023}
+
+### Декабрь {#dekabr}
+
+#### 22.12.2023 {#22-12-2023}
+
+Опубликована [документация GigaServe](/ru/gigachain/gigaserve) — python-библиотеки, которая позволяет размещать цепочки и runnable-интерфейсы GigaChain и предоставлять к ним доступ через REST API.
+
+#### 04.12.2023 {#04-12-2023}
+
+Теперь для доступа к GigaChat вы можете использовать не только REST API, но и [GRPC](/ru/gigachat/api/reference-grpc).
+
+### Сентябрь {#sentyabr}
+
+#### 20.09.2023 {#20-09-2023}
+
+Теперь для работы с GigaChat вы можете использовать [REST API](/ru/gigachat/api/overview) и [SDK GigaChain](/ru/gigachain/overview).
+Для работы с API вы можете использовать специально подготовленную [коллекцию запросов Postman](/ru/gigachat/api/postman-request-collection).

@@ -1,0 +1,121 @@
+---
+lastUpdateDate: 27 марта 2024
+---
+
+# Генерация описания товаров {#generatsiya-opisaniya-tovarov}
+
+Пример промпта для генерации рекламного описания товара для размещения в интернет-магазине.
+
+## Структура промпта {#struktura-prompta}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```json
+{
+  "model": "GigaChat",
+  "messages": [
+        {
+            "role": "system",
+            "content": "Ты — профессиональный маркетолог с опытом написания высококонверсионной рекламы. Для генерации описания товара ты изучаешь потенциальную целевую аудиторию и оптимизируешь рекламный текст так, чтобы он обращался именно к этой целевой аудитории. Создай текст объявления с привлекающим внимание заголовком и убедительным призывом к действию, который побуждает пользователей к целевому действию."
+        },
+        {
+            "role": "user",
+            "content": "Название товара: SberBoom. Категория: умные колонки. Ключевые слова: умная колонка, салют, умный дом."
+        }
+    ]
+}
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+:::caution
+
+Промпт работает с помощью библиотеки gigachain_core, начиная с версии 0.1.9.1.
+
+Для обновления библиотеки выполните команду:
+
+```sh
+pip install -U gigachain_core
+```
+
+:::
+
+```yaml
+input_variables: [product_name, category, key_words]
+output_parser: null
+messages:
+  - role: system
+    prompt:
+      template: 'Ты — профессиональный маркетолог с опытом написания высококонверсионной рекламы.
+        Для генерации описания товара ты изучаешь потенциальную целевую аудиторию и оптимизируешь рекламный текст так, чтобы он обращался именно к этой целевой аудитории.
+        Создай текст объявления с привлекающим внимание заголовком и убедительным призывом к действию, который побуждает пользователей к целевому действию.'
+  - role: user
+    prompt:
+      template: 'Название товара: {product_name}. Категория: {category}. Ключевые слова: {key_words}.'
+template_format: f-string
+_type: chat
+```
+
+Шаблон содержит переменные:
+
+* `product_name` — название товара. Обязательное поле;
+* `category` — категория, к которой относится товар. Обязательное поле;
+* `key_words` — от одного до пяти ключевых слов, связанных с товаром. Необязательное поле.
+
+</TabItem>
+</Tabs>
+
+## Пример запроса {#primer-zaprosa}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```sh
+curl --location 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: <токен_доступа>' \
+--data '{
+  "model": "GigaChat",
+  "temperature": 1.0,
+  "top_p": 0.1,
+  "n": 1,
+  "max_tokens": 512,
+  "repetition_penalty": 1.0,
+  "stream": false,
+  "messages": [
+        {
+            "role": "system",
+            "content": "Ты — профессиональный маркетолог с опытом написания высококонверсионной рекламы. Для генерации описания товара ты изучаешь потенциальную целевую аудиторию и оптимизируешь рекламный текст так, чтобы он обращался именно к этой целевой аудитории. Создай текст объявления с привлекающим внимание заголовком и убедительным призывом к действию, который побуждает пользователей к целевому действию."
+        },
+        {
+            "role": "user", // запрос пользователя
+            "content": "Название товара: SberBoom. Категория: умные колонки. Ключевые слова: умная колонка, салют, умный дом."
+        }
+    ]
+}'
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```python
+from langchain.prompts import load_prompt
+from langchain.chat_models.gigachat import GigaChat
+
+giga = GigaChat(credentials="<авторизационные_данные>")
+
+prompt = load_prompt("lc://prompts/content/product_description.yaml")
+chain = prompt | giga
+chain.invoke(
+    {
+        "product_name": "SberBoom",
+        "category": "умные колонки",
+        "key_words": "умная колонка, салют, умный дом"
+    }
+).content
+```
+
+</TabItem>
+</Tabs>

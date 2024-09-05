@@ -1,0 +1,189 @@
+---
+lastUpdateDate: 23 мая 2024
+---
+ 
+# gRPC API {#opisanie-api}
+
+Для обмена данными с сервисом GigaChat вы можете использовать gRPC-протокол. Подробнее о нем читайте в [официальной документации](https://grpc.io/).
+
+Совершать запросы по протоколу gRPC удобно, если нужно:
+
+* максимально быстро получить ответ;
+* поддержать отзывчивый интерфейс с отображением пользователю промежуточных результатов работы нейросети.
+
+Адрес для передачи запросов по протоколу gRPC:
+
+```default
+gigachat.devices.sberbank.ru
+```
+
+Для работы с API используйте proto-файл.
+
+<details>
+  <summary>gigachatv1.proto</summary>
+
+```csharp
+syntax = "proto3";
+ 
+package gigachat.v1;
+ 
+option go_package = "./;protocol";
+ 
+service ChatService {
+  rpc Chat (ChatRequest) returns (ChatResponse);
+  rpc ChatStream (ChatRequest) returns (stream ChatResponse);
+}
+ 
+message ChatRequest {
+  ChatOptions options = 1;
+  string model = 2;
+  repeated Message messages = 3;
+}
+ 
+message ChatOptions {
+  float temperature = 1;
+  float top_p = 2;
+  int32 max_alternatives = 3;
+  int32 max_tokens = 4;
+  float repetition_penalty = 5;
+  float update_interval = 6;
+  repeated string flags = 7;
+}
+ 
+message Message {
+  string role = 1;
+  string content = 2;
+  string unprocessed_content = 3;
+}
+ 
+message ChatResponse {
+  repeated Alternative alternatives = 1;
+  Usage usage = 2;
+  ModelInfo model_info = 3;
+  int64 timestamp = 4;
+}
+ 
+message Alternative {
+  Message message = 1;
+  string finish_reason = 2;
+  int32 index = 3;
+}
+ 
+message Usage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+}
+ 
+message ModelInfo {
+  string name = 1;
+  string version = 2;
+}
+ 
+ 
+service ModelsService {
+  rpc ListModels (ListModelsRequest) returns (ListModelsResponse);
+  rpc RetrieveModel (RetrieveModelRequest) returns (RetrieveModelResponse);
+}
+ 
+message ListModelsRequest {}
+ 
+message ListModelsResponse {
+  repeated Model models = 1;
+}
+ 
+message Model {
+ string name = 1;
+ string object = 2;
+ string owned_by = 3;
+}
+ 
+message RetrieveModelRequest {
+  string name = 1;
+}
+ 
+message RetrieveModelResponse {
+  Model model = 1;
+}
+```
+
+</details>
+
+## Авторизация {#avtorizatsiya}
+
+Запросы к сервису авторизуются с помощью [токена доступа](/ru/gigachat/api/reference/rest/gigachat-api#poluchenie-tokena-dostupa-i-avtorizatsiya-zaprosov) по протоколу [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749). Токен доступа передается в заголовке `authorization`.
+Пример:
+
+```default
+Bearer <токен доступа>
+```
+
+Подробно о том как получить токен доступа читайте в разделах [Быстрый старт для физических лиц](/ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юридических лиц](/ru/gigachat/legal-quickstart).
+
+## Описание методов {#opisanie-metodov}
+
+### Получить список моделей {#poluchit-spisok-modeley-list-models}
+
+Возвращает массив объектов с данными доступных моделей.
+Выполняется с пустым телом запроса.
+
+Ответ:
+
+<Tabs>
+<TabItem value="example" label="Пример" default>
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/Models" example />
+</TabItem>
+<TabItem value="schema" label="Описание" >
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/Models" schema expandSchemaFields />
+</TabItem>
+</Tabs>
+
+### Получить модель {#poluchit-model-retrieve-model}
+
+Возвращает объект с описанием указанной модели.
+
+Параметры запроса:
+
+<ApiSchema id="gigachat-grpc" pointer="#/components/schemas/ModelId" schema expandSchemaFields />
+
+Ответ:
+
+<Tabs>
+<TabItem value="example" label="Пример" default>
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/Model" example />
+</TabItem>
+<TabItem value="schema" label="Описание" >
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/Model" schema expandSchemaFields />
+</TabItem>
+</Tabs>
+
+### Получить ответ модели {#poluchit-otvet-modeli-chat-request}
+
+Возвращает ответ модели с учетом переданных сообщений.
+
+Параметры запроса:
+
+<ApiSchema id="gigachat-grpc" pointer="#/components/schemas/Chat" schema expandSchemaFields />
+
+Ответ:
+
+<Tabs>
+<TabItem value="example" label="Пример" default>
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/ChatCompletion" example />
+</TabItem>
+<TabItem value="schema" label="Описание" >
+  <ApiSchema id="gigachat-grpc" pointer="#/components/schemas/ChatCompletion" schema expandSchemaFields />
+</TabItem>
+</Tabs>
+
+
+## Ошибки {#oshibki}
+
+| Ошибка                       | Описание                              |
+|------------------------------|---------------------------------------|
+|         `400`                |  Ошибка в параметрах запроса          |
+|         `401`                |  Отсутствует токен доступа или истекло время действия токена |
+|         `404`                |  Не найдена модель                    |
+|         `405`                |  Ошибка при вводе                     |
+|         `413`                |  Превышен максимальный размер входных данных |
+|         `500`                |  Внутренняя ошибка сервиса            |

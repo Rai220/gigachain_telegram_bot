@@ -1,0 +1,121 @@
+---
+lastUpdateDate: 27 марта 2024
+---
+
+# Классификация обращений {#klassifikatsiya-obrasheniy}
+
+Пример промпта для классификации обращений.
+
+:::note
+
+Промпт лучше работает с моделью GigaChat-Pro.
+
+:::
+
+## Структура промпта {#struktura-prompta}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```json
+{
+  "model": "GigaChat",
+  "messages": [
+        {
+            "role": "system",
+            "content": "Классифицируй обращения пользователя в подходящую категорию. Категории: Статус заказа, Возврат и обмен товаров, Характеристики продукта, Технические проблемы, Другое. В ответе укажи только категорию."
+        },
+        {
+            "role": "user",
+            "content": "При оформлении заказа возник вопрос о возможностях устройства. Поможете, пожалуйста, уточнить информацию?"
+        }
+    ]
+}
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+:::caution
+
+Промпт работает с помощью библиотеки gigachain_core, начиная с версии 0.1.9.1.
+
+Для обновления библиотеки выполните команду:
+
+```sh
+pip install -U gigachain_core
+```
+
+:::
+
+```yaml
+input_variables: [text]
+output_parser: null
+messages:
+  - role: system
+    prompt:
+      template: 'Классифицируй обращения пользователя в подходящую категорию. Категории: Статус заказа, Возврат и обмен товаров, Характеристики продукта, Технические проблемы, Другое. В ответе укажи только категорию.'
+  - role: user
+    prompt:
+      template: '{text}'
+template_format: f-string
+_type: chat
+```
+
+Шаблон содержит переменные:
+
+* `text` — текст обращения пользователя. Обязательное поле;
+
+</TabItem>
+</Tabs>
+
+## Пример запроса {#primer-zaprosa}
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+```sh
+curl --location 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: <токен_доступа>' \
+--data '{
+  "model": "GigaChat",
+  "temperature": 1.0,
+  "top_p": 0.1,
+  "n": 1,
+  "max_tokens": 512,
+  "repetition_penalty": 1.0,
+  "stream": false,
+  "messages": [
+        {
+            "role": "system",
+            "content": "Классифицируй обращения пользователя в подходящую категорию. Категории: Статус заказа, Возврат и обмен товаров, Характеристики продукта, Технические проблемы, Другое. В ответе укажи только категорию."
+        },
+        {
+            "role": "user",
+            "content": "При оформлении заказа возник вопрос о возможностях устройства. Помогите уточнить информацию, пожалуйста?"
+        }
+    ]
+}'
+```
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+```python
+from langchain.prompts import load_prompt
+from langchain.chat_models.gigachat import GigaChat
+
+giga = GigaChat(credentials="<авторизационные_данные>")
+
+prompt = load_prompt("lc://prompts/content/classification.yaml")
+chain = prompt | giga
+chain.invoke(
+    {
+        "text": "При оформлении заказа возник вопрос о возможностях устройства. Помогите уточнить информацию, пожалуйста?"
+    }
+).content
+```
+
+</TabItem>
+</Tabs>

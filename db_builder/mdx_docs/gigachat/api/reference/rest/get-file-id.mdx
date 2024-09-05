@@ -1,0 +1,67 @@
+---
+id: get-file-id
+title: "Получить изображение по идентификатору"
+description: "Возвращает файл изображения в бинарном представлении, в формате JPG."
+sidebar_label: "Получить изображение по идентификатору"
+hide_title: true
+hide_table_of_contents: true
+api: {"tags":["Файлы"],"parameters":[{"name":"file_id","description":"Идентификатор созданного изображения, полученный в ответ на запрос пользователя.\nСодержится в ответе модели, в теге `<img>`, в атрибуте `src`.\n\nПобробнее в разделе [Генерация изображений](/ru/gigachat/api/images-generation).\n","schema":{"type":"string"},"in":"path","required":true}],"responses":{"200":{"content":{"image/jpg":{}},"description":"OK"},"400":{"description":"Invalid model ID"},"401":{"description":"Unauthorized"},"404":{"description":"No such Model"}},"security":[{"Токен доступа":[]}],"operationId":"getFileId","description":"Возвращает файл изображения в бинарном представлении, в формате JPG.\n\nИзображения создаются с помощью запроса [POST /chat/completions](/ru/gigachat/api/reference/rest/post-chat).\n\nПодробнее читайте в разделе [Генерация изображений](/ru/gigachat/api/images-generation).\n\n:::note\n\nКонсоль запроса отключена из-за бинарного формата ответа.\n\n:::\n","method":"get","path":"/files/{file_id}/content","servers":[{"url":"https://gigachat.devices.sberbank.ru/api/v1"},{"url":"https://gigachat-preview.devices.sberbank.ru/api/v1"}],"securitySchemes":{"Базовая аутентификация":{"description":"Базовая (Basic) аутентификация с помощью авторизационных данных — строки, полученной в результате кодирования в base64 идентификатора (Client ID) и клиентского ключа (Client Secret) API.\n\nАвторизационные данные передаются в заголовке `Authorization`, в запросе на [получение токена доступа](/ru/gigachat/api/reference/rest/post-token).\n\n<Admonition type=\"note\">\n\nКак получить токен и авторизационные данные (Client Id и Client Secret) читайте в разделах [Быстрый старт для физических лиц](/ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юридических лиц](/ru/gigachat/legal-quickstart).\n\n</Admonition>\n","scheme":"basic","type":"http"},"Токен доступа":{"description":"Аутентификация с помощью токена доступа. Используется во всех запросах к GigaChat API, кроме запроса на [получение токена доступа](/ru/gigachat/api/reference/rest/post-token).","type":"http","scheme":"bearer","bearerFormat":"JWT"}},"info":{"title":"GigaChat API","version":"1.0.0","contact":{"name":"GigaChat API","url":"https://developers.sber.ru/portal/products/gigachat-api","email":"gigachat@sberbank.ru"},"description":"\nСправочная документация по REST API нейросетевой модели GigaChat.\n\nО стоимости и условиях использования GigaChat API вы можете узнать в разделе [Тарифы и оплата](/ru/gigachat/api/tariffs).\n\n## Получение токена доступа и авторизация запросов\n\nЗапросы к GigaChat API передаются по адресу `https://gigachat.devices.sberbank.ru/` и авторизуются с помощью токена доступа по протоколу [OAuth 2.0](https://tools.ietf.org/html/rfc6749).\nТокен доступа передается в заголовке `Authorization`:\n\n```sh\ncurl -L -X GET 'https://gigachat.devices.sberbank.ru/api/v1/models' \\\n-H 'Accept: application/json' \\\n-H 'Authorization: Bearer <токен_доступа>'\n```\n\n:::tip\n\nВы также можете передавать запросы к [моделям в раннем доступе](/ru/gigachat/models#obrashenie-k-modelyam-rannego-dostupa).\nИх возможности могут отличаться от моделей, доступных в промышленном контуре.\n\nДля обращения к моделям в раннем доступе передавайте запросы по адресу `https://gigachat-preview.devices.sberbank.ru/`.\n\n:::\n\nЧтобы получить токен, отправьте запрос [POST /api/v2/oauth](/ru/gigachat/api/reference/rest/post-token):\n\n```sh\ncurl -L -X POST 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth' \\\n-H 'Content-Type: application/x-www-form-urlencoded' \\\n-H 'Accept: application/json' \\\n-H 'RqUID: <идентификатор_запроса>' \\\n-H 'Authorization: Basic <авторизационные_данные>' \\\n--data-urlencode 'scope=GIGACHAT_API_PERS'\n```\n\nГде:\n\n* `RqUID` — обязательный заголовок, в котором нужно передать уникальный идентификатор запроса в формате `uuid4`.\n* `Authorization` — обязательный заголовок, в котором нужно передать авторизационные данные — строку, полученную в результате кодирования в base64 идентификатора (Client ID) и клиентского ключа (Client Secret) API.\n* `scope` — обязательное поле в теле запроса, которое указывает к какой версии API выполняется запрос. Возможные значения:\n  * `GIGACHAT_API_PERS` — доступ для физических лиц.\n  * `GIGACHAT_API_B2B` — доступ для ИП и юридических лиц [по предоплате](/ru/gigachat/api/tariffs#platnye-pakety-pri-rabote-po-predoplatnoy-sheme).\n  * `GIGACHAT_API_CORP` — доступ для ИП и юридических лиц [по постоплате](/ru/gigachat/api/legal-postpaid).\n\nПри успешном выполнении запроса GigaChat API вернет токен доступа, который действует в течение 30 минут:\n\n```json\n{\n  \"access_token\": \"eyJhbGci3iJkaXIiLCJlbmMiOiJBMTI4R0NNIiwidHlwIjoiSldUIn0..Dx7iF7cCxL8SSTKx.Uu9bPK3tPe_crdhOJqU3fmgJo_Ffvt4UsbTG6Nn0CHghuZgA4mD9qiUiSVC--okoGFkjO77W.vjYrk3T7vGM6SoxytPkDJw\",\n  \"expires_at\": 1679471442\n}\n```\n\n:::note\n\nКак получить токен и авторизационные данные (Client Id и Client Secret) читайте в разделах [Быстрый старт для физических лиц](/ru/gigachat/individuals-quickstart) и [Быстрый старт для ИП и юридических лиц](/ru/gigachat/legal-quickstart).\n\n:::\n"},"postman":{"name":"Получить изображение по идентификатору","description":{"content":"Возвращает файл изображения в бинарном представлении, в формате JPG.\n\nИзображения создаются с помощью запроса [POST /chat/completions](/ru/gigachat/api/reference/rest/post-chat).\n\nПодробнее читайте в разделе [Генерация изображений](/ru/gigachat/api/images-generation).\n\n:::note\n\nКонсоль запроса отключена из-за бинарного формата ответа.\n\n:::\n","type":"text/plain"},"url":{"path":["files",":file_id","content"],"host":["{{baseUrl}}"],"query":[],"variable":[{"disabled":false,"description":{"content":"(Required) Идентификатор созданного изображения, полученный в ответ на запрос пользователя.\nСодержится в ответе модели, в теге `<img>`, в атрибуте `src`.\n\nПобробнее в разделе [Генерация изображений](/ru/gigachat/api/images-generation).\n","type":"text/plain"},"type":"any","value":"","key":"file_id"}]},"header":[{"key":"Accept","value":"image/jpg"}],"method":"GET","auth":{"type":"bearer","bearer":[{"type":"any","value":"<Bearer Token>","key":"token"}]}}}
+sidebar_class_name: "get api-method"
+info_path: ru/gigachat/api/reference/rest/gigachat-api
+custom_edit_url: null
+download_button: { href: 'files/openapi/gigachat/api.yml', text: 'Скачать спецификацию' }
+lastUpdateDate: 30 июля 2024
+---
+
+import ApiTabs from "@theme/ApiTabs";
+import DiscriminatorTabs from "@theme/DiscriminatorTabs";
+import MethodEndpoint from "@theme/ApiDemoPanel/MethodEndpoint";
+import SecuritySchemes from "@theme/ApiDemoPanel/SecuritySchemes";
+import MimeTabs from "@theme/MimeTabs";
+import ParamsItem from "@theme/ParamsItem";
+import ResponseSamples from "@theme/ResponseSamples";
+import SchemaItem from "@theme/SchemaItem";
+import SchemaTabs from "@theme/SchemaTabs";
+import TabItem from "@theme/TabItem";
+
+<h1 className={"openapi__heading"}>Получить изображение по идентификатору</h1>
+
+<MethodEndpoint method={"get"} path={"/files/{file_id}/content"}></MethodEndpoint>
+
+<SecuritySchemes infoPath={"ru/gigachat/api/reference/rest/gigachat-api"}></SecuritySchemes>
+
+
+
+Возвращает файл изображения в бинарном представлении, в формате JPG.
+
+Изображения создаются с помощью запроса [POST /chat/completions](/ru/gigachat/api/reference/rest/post-chat).
+
+Подробнее читайте в разделе [Генерация изображений](/ru/gigachat/api/images-generation).
+
+:::note
+
+Консоль запроса отключена из-за бинарного формата ответа.
+
+:::
+
+
+## Запрос {#zapros}
+
+<details style={{"marginBottom":"1rem"}} className={"openapi-markdown__details"} data-collapsed={false} open={true}><summary style={{}}><h3 className={"openapi-markdown__details-summary-header-params"}>Path Parameters</h3></summary><div><ul><ParamsItem className={"paramsItem"} param={{"name":"file_id","description":"Идентификатор созданного изображения, полученный в ответ на запрос пользователя.\nСодержится в ответе модели, в теге `<img>`, в атрибуте `src`.\n\nПобробнее в разделе [Генерация изображений](/ru/gigachat/api/images-generation).\n","schema":{"type":"string"},"in":"path","required":true}}></ParamsItem></ul></div></details><div><div><ApiTabs><TabItem label={"200"} value={"200"}><div>
+
+OK
+
+</div><div><MimeTabs className={"openapi-tabs__mime"} schemaType={"response"}><TabItem label={"image/jpg"} value={"image/jpg"}><SchemaTabs className={"openapi-tabs__schema"}><TabItem label={"Schema"} value={"Schema"}><details style={{}} className={"openapi-markdown__details response"} data-collapsed={false} open={true}><summary style={{}} className={"openapi-markdown__details-summary-response"}><strong>Schema</strong></summary><div style={{"textAlign":"left","marginLeft":"1rem"}}></div><ul style={{"marginLeft":"1rem"}}>any</ul></details></TabItem></SchemaTabs></TabItem></MimeTabs></div></TabItem><TabItem label={"400"} value={"400"}><div>
+
+Invalid model ID
+
+</div><div></div></TabItem><TabItem label={"401"} value={"401"}><div>
+
+Unauthorized
+
+</div><div></div></TabItem><TabItem label={"404"} value={"404"}><div>
+
+No such Model
+
+</div><div></div></TabItem></ApiTabs></div></div>
+      

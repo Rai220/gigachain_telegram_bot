@@ -51,6 +51,7 @@ class RouteQuery(BaseModel):
 
 # LLM with function call
 llm = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=False)
+llm_with_censor = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=False)
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
 # Prompt
@@ -204,7 +205,8 @@ answer_grader = answer_prompt | structured_llm_grader
 
 system = f"""Ты переписываешь вопросы, преобразуя входной вопрос в улучшенную версию, 
 {MAIN_KNOWLAGE}
-оптимизированную для поиска в векторной базе знаний (vectorstore). 
+оптимизированную для поиска в векторной базе знаний и в поисковой системе.
+Если в вопросе не понятно о чем идет речь, то считай, что он относится к GigaChat, GigaChain и является техническим.
 Посмотри на входные данные и постарайся понять основное семантическое намерение / значение."""
 re_write_prompt = ChatPromptTemplate.from_messages(
     [
@@ -217,6 +219,24 @@ re_write_prompt = ChatPromptTemplate.from_messages(
 )
 
 question_rewriter = re_write_prompt | llm | StrOutputParser()
+
+system = f"""Ты финализируешь ответы специалиста технической поддержки для пользователя.
+{MAIN_KNOWLAGE}
+Посмотри на окончательный ответ, перепиши его понятным, корректным языком, добавив нужные данные, но не делай его слишком длинным.
+Если ответ не относится к теме технической поддержке GigaChat, GigaChain, API и большим языковым моделям, а также работе с ними, 
+то просто напиши, что вопрос не имеет отношения к теме технической поддержке и тебе нечего сказать по этому поводу.
+"""
+finalize_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system),
+        (
+            "human",
+            "Вот исходный ответ: \n\n {generation} \n Сформулируй улучшенный ответ или напиши, что не можешь ответить.",
+        ),
+    ]
+)
+
+finalizer = finalize_prompt | llm_with_censor | StrOutputParser()
 
 
 class GraphState(TypedDict):
@@ -276,6 +296,15 @@ def transform_query(state):
     # Re-write question
     better_question = question_rewriter.invoke({"question": question})
     return {"documents": documents, "question": better_question}
+
+
+def finalize(state):
+    generation = state["generation"]
+
+
+    # Re-write question
+    generation = finalizer.invoke({"generation": generation})
+    return {"generation": generation}
 
 
 def web_search(state):
@@ -364,6 +393,7 @@ workflow.add_node("grade_documents", grade_documents)  # grade documents
 workflow.add_node("generate", generate)  # generatae
 workflow.add_node("self_answer", generate)  # retrieve
 workflow.add_node("transform_query", transform_query)  # transform_query
+workflow.add_node("finalize", finalize)  # transform_query
 
 # Build graph
 workflow.add_conditional_edges(
@@ -375,7 +405,7 @@ workflow.add_conditional_edges(
         "self_answer": "self_answer",
     },
 )
-workflow.add_edge("self_answer", END)
+workflow.add_edge("self_answer", "finalize")
 workflow.add_edge("web_search", "generate")
 workflow.add_edge("retrieve", "grade_documents")
 workflow.add_conditional_edges(
@@ -392,7 +422,7 @@ workflow.add_conditional_edges(
     grade_generation_v_documents_and_question,
     {
         "not supported": "transform_query",
-        "useful": END,
+        "useful": "finalize",
         "not useful": "generate",
     },
 )
@@ -407,6 +437,8 @@ workflow.add_conditional_edges(
         "self_answer": "self_answer"
     },
 )
+
+workflow.add_edge("finalize", END)
 
 # Compile
 graph = workflow.compile()

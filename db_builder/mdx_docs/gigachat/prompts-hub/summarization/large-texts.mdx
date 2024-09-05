@@ -1,0 +1,62 @@
+---
+lastUpdateDate: 6 мая 2024
+---
+
+# Суммаризация больших текстов с помощью GigaChain {#summarizatsiya-bolshih-tekstov-s-pomoshyu-giga-chain}
+
+Раздел содержит пример суммаризации первых двух глав [«Мастера и Маргариты»](https://github.com/ai-forever/gigachain/blob/dev/docs/docs/use_cases/%D0%BC%D0%B0%D1%81%D1%82%D0%B5%D1%80_%D0%B8_%D0%BC%D0%B0%D1%80%D0%B3%D0%B0%D1%80%D0%B8%D1%82%D0%B0.txt) с помощью GigaChain и нескольких шаблонов промптов, доступных в [репозитории](https://github.com/ai-forever/gigachain/tree/dev/hub/prompts).
+
+:::note
+
+Используйте для суммаризации модель GigaChat, которая поддерживает 8000 токенов и более. Например, GigaChat-Pro или GigaChat-Plus.
+
+:::
+
+Пример:
+
+```py
+from langchain.prompts import load_prompt
+from langchain.chains.summarize import load_summarize_chain
+from langchain.chat_models.GigaChat import GigaChat
+from langchain.document_loaders import TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+giga = GigaChat(credentials="<авторизационные_данные>", model="GigaChat-Pro")
+
+loader = TextLoader("../../../../docs/docs/use_cases/мастер_и_маргарита.txt")
+documents = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 7000,
+    chunk_overlap  = 0,
+    length_function = len,
+    is_separator_regex = False,
+)
+documents = text_splitter.split_documents(documents)
+print(f"Количество частей книги: {len(documents)}")
+
+book_map_prompt = load_prompt("lc://prompts/summarize/map_reduce/summarize_book_map.yaml")
+book_combine_prompt = load_prompt("lc://prompts/summarize/map_reduce/summarize_book_combine.yaml")
+
+chain = load_summarize_chain(giga, chain_type="map_reduce", 
+                             map_prompt=book_map_prompt,
+                             combine_prompt=book_combine_prompt,
+                             verbose=False)
+res = chain.invoke({"input_documents": documents})
+print(res["output_text"].replace(". ", ".\n"))
+```
+
+Используйте дополнительные параметры функции `chain.invoke()`, для управления объемом текста и изменения количества предложений:
+
+```py
+res = chain.invoke({
+    "input_documents": documents,
+    "map_size": "одно предложение", 
+    "combine_size": "три предложения"
+    })
+print(res["output_text"].replace(". ", ".\n"))
+```
+
+## Смотрите также {#smotrite-takzhe}
+
+* [Jupyter-блокнот с примером в репозитории](https://github.com/ai-forever/gigachain/blob/dev/hub/prompts/summarize/map_reduce/summarize_examples.ipynb)

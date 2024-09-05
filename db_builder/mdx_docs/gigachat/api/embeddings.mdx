@@ -1,0 +1,243 @@
+---
+keywords: ["эмбеддинг", "эмбеддинги", "векторное представление текста", "embeddings", "embedding"]
+lastUpdateDate: 1 августа 2024
+---
+
+# Векторное представление текста {#vektornoe-predstavlenie-teksta}
+
+Эмбеддинг (англ. *embedding*) — это вектор в виде массива чисел, который получается после преобразования текста языковой моделью
+Полученный вектор можно использовать для измерения семантического сходства преобразованного текста.
+Комбинация чисел, составляющих вектор, действует как многомерная карта для измерения сходства.
+
+Векторное представление текста (эмбеддинг) используется для:
+
+* улучшения качества поиска — эмбеддинги позволяют оценивать сходство между текстовыми запросами на основе расстояния между соответствующими векторами. Это позволяет улучшить качество поиска и релевантность результатов;
+* уменьшения размерности данных — с помощью эмбеддингов вы можете представить текстовые запросы в виде числовых векторов, что позволяет снизить размерность данных и ускорить их обработку;
+* обеспечения универсальности — эмбеддинги можно использовать для различных задач обработки естественного языка, таких как Retrieval Augmented Generation (RAG), классификация текстов, кластеризация и других.
+
+Для преобразования строк в эмбеддинги в GigaChat API есть метод [`POST /embeddings`](/ru/gigachat/api/reference/rest/post-embeddings).
+Запрос выполняется к [модели Embeddings](/ru/gigachat/models#model-dlya-vektornogo-predstavleniya-teksta) (`"model": "Embeddings"`) и авторизуется с помощью [токена доступа](/ru/gigachat/api/reference/rest/gigachat-api).
+Для работы с моделью и создания эмбеддингов вы также можете использовать GigaChain.
+
+:::note
+
+Создание эмбеддингов оплачивается отдельно от генерации текста.
+
+Подробнее в разделе [Тарифы и оплата](/ru/gigachat/api/tariffs).
+
+:::
+
+<Tabs queryString="tool">
+<TabItem value="api" label="GigaChat API" default>
+
+Пример запроса на создание эмбеддинга:
+
+```shell
+curl https://gigachat.devices.sberbank.ru/api/v1/embeddings \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer <токен доступа>' \
+  --data '{
+    "model": "Embeddings",
+    "input": [
+        "Расскажи о современных технологиях",
+        "Какие новинки в мире IT?"
+    ]
+  }'
+```
+
+Параметры запроса:
+
+<ApiSchema id="gigachat" pointer="#/components/schemas/EmbeddingsBody" schema expandSchemaFields />
+
+Пример ответа:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.0023064255,
+        -0.009327292,
+        ...
+        -0.0028842222
+      ],
+      "index": 0
+    }
+  ],
+  "model": "Embeddings"
+}
+```
+
+Параметры ответа:
+
+<ApiSchema id="gigachat" pointer="#/components/schemas/Embedding" schema expandSchemaFields />
+
+</TabItem>
+<TabItem value="sdk" label="GigaChain" >
+
+Для создания эмбеддингов с помощью SDK используйте функцию `embed_documents()`, модуля `GigaChatEmbeddings`, импортированного из `langchain_community.embeddings.gigachat`:
+
+```python
+from langchain_community.embeddings.gigachat import GigaChatEmbeddings
+
+embeddings = GigaChatEmbeddings(credentials="<авторизационные_данные>", verify_ssl_certs=False)
+result = embeddings.embed_documents(texts=["Привет!"])
+print(result)
+```
+
+В ответ функция возвращает массив чисел, представляющих значения эмбеддинга для переданного текста:
+
+```json
+[
+    [
+        0.72149658203125,
+        -0.18883895874023438,
+        0.013126373291015625,
+        -1.27783203125,
+        1.4967041015625,
+        -0.97698974609375,
+        -0.1722869873046875,
+        1.4625244140625,
+
+        ...
+
+        -0.007974624633789062,
+        -0.77838134765625,
+        1.167236328125
+    ]
+]
+```
+
+</TabItem>
+</Tabs>
+
+## Использование эмбеддингов для поиска {#ispolzovanie-embeddingov-dlya-poiska}
+
+Поиск по неструктурированному тексту — один из наиболее распространненых сценариев использования эмбеддингов.
+Для этого:
+
+1. Создайте векторное представление текста, по которому будет выполняться поиск.
+2. Сохраните эмбеддинг в векторной базе данных.
+3. Выполните запрос к базе.
+
+Ниже показан простой пример реализации поиска по эмбеддингу, реализованный с помощью [GigaChain](/ru/gigachain/overview) и [векторного хранилища Chroma](https://docs.trychroma.com/).
+
+Пример демонстрирует поиск по документам — экземплярам GigaChain-класса [Document](https://api.python.langchain.com/en/latest/documents/langchain_core.documents.base.Document.html), который представляет единицу текста и связанные с ним метаданные.
+Класс имеет два атрибута:
+
+- `page_content` — строку, представляющую содержимое;
+- `metadata` — словарь, содержащий произвольные метаданные.
+
+Атрибут `metadata` может содержать данные об источнике документа, его связи с другими документами и другую дополнительную информацию.
+
+Для запуска примера установите зависимости:
+
+```sh
+pip install gigachain-community gigachain-chroma
+```
+
+Создайте несколько документов и сохраните их в векторном хранилище:
+
+```python
+from langchain_core.documents import Document
+from langchain_chroma import Chroma
+from langchain_community.embeddings.gigachat import GigaChatEmbeddings
+
+# Список документов, по которым будет выполняться поиск
+documents = [
+    Document(
+        page_content="Собаки — отличные компаньоны, которые известны своей преданностью и дружелюбием.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+    Document(
+        page_content="Кошки — независимые животные, которым нужно собственное пространство.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+    Document(
+        page_content="Золотые рыбки — отличные домашние животные для начинающих. За ними достаточно просто ухаживать.",
+        metadata={"source": "fish-pets-doc"},
+    ),
+    Document(
+        page_content="Попугаи — умные птицы, которые способны имитировать человеческую речь.",
+        metadata={"source": "bird-pets-doc"},
+    ),
+    Document(
+        page_content="Кролики — социальные животные, которым нужно много места, чтобы прыгать.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+]
+
+# Создайте векторное хранилище и передайте в него список документов и модель для создания векторного представления
+vectorstore = Chroma.from_documents(
+    documents,
+    embedding = GigaChatEmbeddings(
+    credentials="<авторизационные_данные>", scope="GIGACHAT_API_PERS", verify_ssl_certs=False
+    ),
+)
+```
+
+Теперь вы можете использовать методы vectorstore для выполнения поиска по документам.
+
+Поиск по документам на основе схожести с тексовым запросом:
+
+```python
+vectorstore.similarity_search("кошка")
+```
+
+Результат поиска:
+
+```text
+[Document(page_content='Кошки — независимые животные, которым нужно собственное пространство.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Собаки — отличные компаньоны, которые известны своей преданностью и дружелюбием.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Кролики — социальные животные, которым нужно много места, чтобы прыгать.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Попугаи — умные птицы, которые способны имитировать человеческую речь.', metadata={'source': 'bird-pets-doc'})]
+```
+
+Оценка схожести запроса и содержимого хранилища:
+
+```python
+# Оценка зависит от выбранного векторного хранилища.
+# Chroma возвращает метрику расстояния, которая должна варьироваться обратно пропорционально схожести.
+
+vectorstore.similarity_search_with_score("кошка")
+```
+
+Результат оценки:
+
+```text
+[(Document(page_content='Кошки — независимые животные, которым нужно собственное пространство.', metadata={'source': 'mammal-pets-doc'}),
+  218.2356719970703),
+ (Document(page_content='Собаки — отличные компаньоны, которые известны своей преданностью и дружелюбием.', metadata={'source': 'mammal-pets-doc'}),
+  319.75384521484375),
+ (Document(page_content='Кролики — социальные животные, которым нужно много места, чтобы прыгать.', metadata={'source': 'mammal-pets-doc'}),
+  349.84930419921875),
+ (Document(page_content='Попугаи — умные птицы, которые способны имитировать человеческую речь.', metadata={'source': 'bird-pets-doc'}),
+  352.6993103027344)]
+```
+
+Поиск документов на основе схожести с запросом, представленным в виде вектора:
+
+```python
+embedding = GigaChatEmbeddings(
+    credentials="<авторизационные_данные>", scope="GIGACHAT_API_PERS", verify_ssl_certs=False
+    )
+
+embedded_query = embedding.embed_query("кошка")
+
+vectorstore.similarity_search_by_vector(embedded_query)
+```
+
+Результат поиска:
+
+```text
+[Document(page_content='Кошки — независимые животные, которым нужно собственное пространство.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Собаки — отличные компаньоны, которые известны своей преданностью и дружелюбием.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Кролики — социальные животные, которым нужно много места, чтобы прыгать.', metadata={'source': 'mammal-pets-doc'}),
+ Document(page_content='Попугаи — умные птицы, которые способны имитировать человеческую речь.', metadata={'source': 'bird-pets-doc'})]
+```
+
+## Cмотрите также {#cmotrite-takzhe}
+
+* [Пример использования модели Embeddings и GigaChain для создания RAG-приложения](https://github.com/ai-forever/gigachain/blob/master/docs/docs/cookbook/gigachat_qa.ipynb), которое генерирует ответы на основе предоставленного текста.

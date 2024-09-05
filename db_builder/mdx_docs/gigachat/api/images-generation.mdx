@@ -1,0 +1,185 @@
+---
+lastUpdateDate: 23 мая 2024
+---
+
+# Создание изображений {#generatsiya-izobrazheniy}
+
+GigaChat API вернет изображение, если в запросе на генерацию [`POST /chat/completions`](/ru/gigachat/api/reference/rest/post-chat) получит соответствующее сообщение, например, «Нарисуй розового кота».
+Изображения генерируются в бинарном виде в формате JPG с помощью встроенной [функции](/ru/gigachat/api/function-calling) text2image.
+
+В ответ GigaChat возвращает идентификатор созданного изображения, которое можно скачать с помощью запроса [`POST /files/:file_id/content`](/ru/gigachat/api/reference/rest/get-file-id).
+
+Для создания изображения в запросе нужно передать параметр `"function_call": "auto"`, с помощью которого модель определяет необходимость вызова функции text2image.
+При создании изображений с помощью встроенной функции модель возвращает ответ с результатом `"finish_reason": "stop"`.
+
+:::tip
+
+Вы можете стилизовать изображения с помощью системного промпта.
+
+:::
+
+Пример запроса на создание изображения:
+
+```sh
+curl -L -X POST 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions' \
+-H 'Content-Type: application/json' \
+-H 'Accept: application/json' \
+-H 'Authorization: Bearer <токен_доступа>' \
+--data-raw '{
+  "model": "GigaChat",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Ты — Василий Кандинский"      
+    },
+    {
+      "role": "user",
+      "content": "Нарисуй розового кота"
+    }
+  ],
+  "function_call": "auto",
+}'
+```
+
+Пример ответа:
+
+```json
+{
+    "choices": [
+        {
+            "message": {
+                "content": "Запускаю генерацию изображения. Ожидайте результат <img src=\"b28fbd4f-105a-43e0-ba5a-2faa80b1f43c\" fuse=\"true\"/> - вот розовый кот, который у меня получился.",
+                "role": "assistant",
+                "data_for_context": [
+                    {
+                        "content": "Запускаю генерацию изображения. Ожидайте результат",
+                        "role": "assistant",
+                        "function_call": {
+                            "name": "text2image",
+                            "arguments": {
+                                "query": "pink cat, cartoon, colorful, drawing"
+                            }
+                        }
+                    },
+                    {
+                        "content": "{\"status\":\"success\"}",
+                        "role": "function",
+                        "name": "text2image"
+                    },
+                    {
+                        "content": " - вот розовый кот, который у меня получился.",
+                        "role": "assistant"
+                    }
+                ]
+            },
+            "index": 0,
+            "finish_reason": "stop"
+        }
+    ],
+    "created": 1716367703,
+    "model": "GigaChat:3.1.25.3",
+    "object": "chat.completion",
+    "usage": {
+        "prompt_tokens": 372,
+        "completion_tokens": 48,
+        "total_tokens": 420
+    }
+}
+```
+
+Массив `data_for_context` содержит сообщения для работы модели в правильном контексте.
+
+:::note
+
+Подробнее о функциях — в разделе [Работа с функциями](/ru/gigachat/api/function-calling#vyzov-vstroennykh-funktsiy).
+
+:::
+
+## Скачивание изображения {#skachivanie-izobrazheniya}
+
+Ответ модели будет содержать идентификатор получившегося изображения в формате `uuid4`.
+Идентификатор передается в поле `message.content`, в теге `<img>`, в атрибуте `src`:
+
+```json
+{
+    "message": {
+        "content": "Запускаю генерацию изображения. Ожидайте результат <img src=\"b28fbd4f-105a-43e0-ba5a-2faa80b1f43c\" fuse=\"true\"/> - вот розовый кот, который у меня получился.",
+        "role": "assistant",
+        "data_for_context": [
+            {
+                "content": "Запускаю генерацию изображения. Ожидайте результат",
+                "role": "assistant",
+                "function_call": {
+                    "name": "text2image",
+                    "arguments": {
+                        "query": "pink cat, cartoon, colorful, drawing"
+                    }
+                }
+            },
+            {
+                "content": "{\"status\":\"success\"}",
+                "role": "function",
+                "name": "text2image"
+            },
+            {
+                "content": " - вот розовый кот, который у меня получился.",
+                "role": "assistant"
+            }
+        ]
+    },
+    "index": 0,
+    "finish_reason": "stop"
+}
+```
+
+Для скачивания изображения передайте полученный идентификатор в запросе [`GET /files/{file_id}/content`](/ru/gigachat/api/reference/rest/get-file-id):
+
+<Tabs queryString="lang">
+<TabItem value="curl" label="cURL" default>
+
+```shell
+curl -L -X GET 'https://gigachat.devices.sberbank.ru/api/v1/files/<идентификатор_изображения>/content' -o "<имя_файла>.jpg" \
+-H 'Accept: application/jpg' \
+-H 'Authorization: Bearer <токен_доступа>'
+```
+
+</TabItem>
+<TabItem value="py" label="Python" >
+
+```py
+import requests
+import shutil
+
+
+url = "https://gigachat.devices.sberbank.ru/api/v1/files/<идентификатор_изображения>/content"
+
+headers = {
+  'Accept': 'application/jpg',
+  'Authorization': 'Bearer <токен_доступа>'
+}
+
+response = requests.request("GET", url, headers=headers, stream=True)
+
+with open('<имя_файла>.jpg', 'wb') as out_file:
+    shutil.copyfileobj(response.raw, out_file)
+del response
+```
+
+</TabItem>
+<TabItem value="postman" label="Postman" >
+
+Если вы используете коллекцию запросов Postman, вы можете сохранить ответ на запрос `GET /files/{file_id}/content` в файл с помощью опции **Save response to file**.
+
+В результате вы получите файл с расширением bin.
+
+Чтобы просмотреть изображение измените расширение на jpg.
+
+</TabItem>
+</Tabs>
+
+Ответ на запрос будет содержать бинарное представление файла в формате JPG.
+
+## Смотрите также {#smotrite-takzhe}
+
+* [Примеры промптов для создания изображений](https://developers.sber.ru/help/gigachat/how-to-generate-images)
+* [Работа с функциями](/ru/gigachat/api/function-calling)
