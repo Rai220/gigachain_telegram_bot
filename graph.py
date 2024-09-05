@@ -40,8 +40,8 @@ MAIN_KNOWLAGE = (
 
 # Data model
 class RouteQuery(BaseModel):
-    """Выбирает где осуществить поиск данных для ответа на вопрос: vectorstore (векторное хранилище знаний),
-    web_search (поиск в интернете) или self_answer (ответ без дополнительных данных)"""
+    """Инструмент для запроса дополнительных данных для ответа на вопрос польователя: vectorstore (векторное хранилище знаний),
+    web_search (поиск в интернете вопросов, связанных с техподдержкой) или self_answer (дополнительные данные не требуются)"""
 
     datasource: Literal["vectorstore", "web_search", "self_answer"] = Field(
         ...,
@@ -68,7 +68,7 @@ system = f"""Ты эксперт по маршрутизации пользов�
 
 Если вопрос пользователя выглдяит опасно или не относится к вопросам технической поддержки, просит поискать что-то в интернете, затрагивает чувствительные темы, 
 относится к политике, религии, расизму и т.д., то используй self_answer. Ты не должен искать в интернете вопросы, которые не относятся к области технической 
-поддержки пользователей.
+поддержки пользователей. Если вопрос не относится к технической поддержке - выбирай self_answer.
 """
 route_prompt = ChatPromptTemplate.from_messages(
     [
@@ -310,9 +310,9 @@ def route_question(state):
         retrieve_count = 0
     if source.datasource == "self_answer":
         return "self_answer"
-    elif source.datasource == "web_search" and state.get("search_count", 0) < 3:
+    elif source.datasource == "web_search" and state.get("search_count", 0) < 2:
         return "web_search"
-    elif source.datasource == "vectorstore" and state.get("retrieve_count", 0) < 3:
+    elif source.datasource == "vectorstore" and state.get("retrieve_count", 0) < 2:
         return "vectorstore"
     else:
         if search_count < 3:
@@ -360,9 +360,9 @@ workflow = StateGraph(GraphState)
 # Define the nodes
 workflow.add_node("web_search", web_search)  # web search
 workflow.add_node("retrieve", retrieve)  # retrieve
-workflow.add_node("self_answer", generate)  # retrieve
 workflow.add_node("grade_documents", grade_documents)  # grade documents
 workflow.add_node("generate", generate)  # generatae
+workflow.add_node("self_answer", generate)  # retrieve
 workflow.add_node("transform_query", transform_query)  # transform_query
 
 # Build graph
@@ -383,7 +383,7 @@ workflow.add_conditional_edges(
     decide_to_generate,
     {
         "transform_query": "transform_query",
-        "generate": "generate",
+        "generate": "generate"
     },
 )
 
@@ -404,6 +404,7 @@ workflow.add_conditional_edges(
     {
         "web_search": "web_search",
         "vectorstore": "retrieve",
+        "self_answer": "self_answer"
     },
 )
 
