@@ -21,7 +21,7 @@ emojis = {
     "retrieve": "📚🔍",
     "grade_documents": "📚⬆️",
     "generate": "📚🧠",
-    "self": "🧠🧠",
+    "self_answer": "🧠🧠",
     "transform_query": "🔄",
     "finalizing": "✅",
 }
