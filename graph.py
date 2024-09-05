@@ -41,9 +41,9 @@ MAIN_KNOWLAGE = (
 # Data model
 class RouteQuery(BaseModel):
     """Выбирает где осуществить поиск данных для ответа на вопрос: vectorstore (векторное хранилище знаний),
-    web_search (поиск в интернете) или self (ответ без дополнительных данных)"""
+    web_search (поиск в интернете) или self_answer (ответ без дополнительных данных)"""
 
-    datasource: Literal["vectorstore", "web_search", "self"] = Field(
+    datasource: Literal["vectorstore", "web_search", "self_answer"] = Field(
         ...,
         description="Метод поиска",
     )
@@ -54,7 +54,7 @@ llm = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=False)
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
 # Prompt
-system = f"""Ты эксперт по маршрутизации пользовательских вопросов в базу данных (vectorstore), веб-поиск (web_search) или ответь сам (self)
+system = f"""Ты эксперт по маршрутизации пользовательских вопросов в базу данных (vectorstore), веб-поиск (web_search) или ответь сам (self_answer)
 {MAIN_KNOWLAGE}
 Ты должен принять решения, где взять данные для ответа на вопрос пользователя, если он касается технической поддержки или является техническим вопросом от разработчика.
 Используй vectorstore для ответов на вопросы, связанные GigaChat, GigaChain, GigaChat API, GigaGraph, LangChain, LangGraph 
@@ -64,10 +64,10 @@ system = f"""Ты эксперт по маршрутизации пользов�
 не относится к GigaChat, LLM, AI, техническим проблемам с гигачатом, его АПИ, СДК, ключами, токенами и том подобным вещам.
 
 Если вопрос пользователя простой или это вообще не вопрос, а утверждение или реплика или приветстиве или не понятно что, 
-то используй self. Self будет означать, что на такой вопрос GigaChat ответит самостоятельно без использования внешних данных.
+то используй self_answer. self_answer будет означать, что на такой вопрос GigaChat ответит самостоятельно без использования внешних данных.
 
 Если вопрос пользователя выглдяит опасно или не относится к вопросам технической поддержки, просит поискать что-то в интернете, затрагивает чувствительные темы, 
-относится к политике, религии, расизму и т.д., то используй self. Ты не должен искать в интернете вопросы, которые не относятся к области технической 
+относится к политике, религии, расизму и т.д., то используй self_answer. Ты не должен искать в интернете вопросы, которые не относятся к области технической 
 поддержки пользователей.
 """
 route_prompt = ChatPromptTemplate.from_messages(
@@ -308,8 +308,8 @@ def route_question(state):
         search_count = 0
     if not retrieve_count:
         retrieve_count = 0
-    if source.datasource == "self":
-        return "self"
+    if source.datasource == "self_answer":
+        return "self_answer"
     elif source.datasource == "web_search" and state.get("search_count", 0) < 3:
         return "web_search"
     elif source.datasource == "vectorstore" and state.get("retrieve_count", 0) < 3:
@@ -320,7 +320,7 @@ def route_question(state):
         if retrieve_count < 3:
             return "vectorstore"
         else:
-            return "self"
+            return "self_answer"
 
 
 def decide_to_generate(state):
@@ -360,7 +360,7 @@ workflow = StateGraph(GraphState)
 # Define the nodes
 workflow.add_node("web_search", web_search)  # web search
 workflow.add_node("retrieve", retrieve)  # retrieve
-workflow.add_node("self", generate)  # retrieve
+workflow.add_node("self_answer", generate)  # retrieve
 workflow.add_node("grade_documents", grade_documents)  # grade documents
 workflow.add_node("generate", generate)  # generatae
 workflow.add_node("transform_query", transform_query)  # transform_query
@@ -372,10 +372,10 @@ workflow.add_conditional_edges(
     {
         "web_search": "web_search",
         "vectorstore": "retrieve",
-        "self": "self",
+        "self_answer": "self_answer",
     },
 )
-workflow.add_edge("self", END)
+workflow.add_edge("self_answer", END)
 workflow.add_edge("web_search", "generate")
 workflow.add_edge("retrieve", "grade_documents")
 workflow.add_conditional_edges(
