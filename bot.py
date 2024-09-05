@@ -1,11 +1,11 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import BotCommand
-from langchain_openai import ChatOpenAI
 import asyncio
-import os
-from dotenv import load_dotenv, find_dotenv
-from graph import graph
 import logging
+import os
+
+from aiogram import Bot, Dispatcher, types
+from dotenv import find_dotenv, load_dotenv
+
+from graph import graph
 
 load_dotenv(find_dotenv())
 
@@ -25,22 +25,23 @@ emojis = {
     "transform_query": "🔄",
 }
 
+
 @dp.message()
 async def handle_message(message: types.Message):
     user_message = message.text
     if not user_message:
         return
     bot_username = (await bot.get_me()).username
-    
+
     # Проверяем, было ли упоминание бота в канале или сообщение отправлено напрямую
-    if message.chat.type in ('group', 'supergroup', 'channel'):
+    if message.chat.type in ("group", "supergroup", "channel"):
         # Проверяем упоминание
-        if not (f'@{bot_username}' in user_message):
+        if not (f"@{bot_username}" in user_message):
             return  # Игнорируем сообщение, если бот не был упомянут
 
         # Удаляем упоминание из текста сообщения, чтобы его не обрабатывала модель
-        user_message = user_message.replace(f'@{bot_username}', '').strip()
-    
+        user_message = user_message.replace(f"@{bot_username}", "").strip()
+
     if user_message.startswith("/start"):
         await message.answer("Я готов к работе")
         return
@@ -48,10 +49,12 @@ async def handle_message(message: types.Message):
         return
     if user_message.strip() == "":
         return
-        
+
     try:
         # Log the user's request
-        logging.warning(f"User request: {user_message}, from {message.from_user.id} {message.from_user.username}")
+        logging.warning(
+            f"User request: {user_message}, from {message.from_user.id} {message.from_user.username}"
+        )
 
         # Предполагаем, что llm.stream поддерживает стриминг ответа
         answer = await message.answer("Обрабатываю ваш запрос...")
@@ -61,20 +64,26 @@ async def handle_message(message: types.Message):
             for key, value in output.items():
                 if key == last_step:
                     continue
-                await answer.edit_text(f"Current step - {key} " + emojis.get(key, "") + "...")
+                await answer.edit_text(
+                    f"Current step - {key} " + emojis.get(key, "") + "..."
+                )
                 last_step = key
         await answer.delete()
         await message.answer(value["generation"])
     except Exception as e:
         logging.error(f"Error processing user request: {e}", exc_info=True)
-        await message.answer(f"Произошла ошибка {e} при обработке вашего запроса. Пожалуйста, попробуйте еще раз.")
+        await message.answer(
+            f"Произошла ошибка {e} при обработке вашего запроса. Пожалуйста, попробуйте еще раз."
+        )
+
 
 async def main():
     # Регистрация обработчиков
     dp.message.register(handle_message)
-    
+
     # Запуск бота
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
