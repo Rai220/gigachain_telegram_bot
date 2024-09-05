@@ -1,34 +1,32 @@
 import os
-from typing import Literal
+from typing import List, Literal
 
+from dotenv import find_dotenv, load_dotenv
 from langchain.schema import Document
 from langchain_community.chat_models.gigachat import GigaChat
 from langchain_community.embeddings.gigachat import GigaChatEmbeddings
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langgraph.graph import END, START, StateGraph
 from pinecone import Pinecone
-from dotenv import load_dotenv, find_dotenv
+from typing_extensions import TypedDict
 
 load_dotenv(find_dotenv())
-
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
 index_name = "gigachain-test-index-gpt-2"
-
 index = pc.Index(index_name)
 
 # embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
 embeddings = OpenAIEmbeddings()
-
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
-
 retriever = vector_store.as_retriever()
-
+web_search_tool = TavilySearchResults(k=10)
 
 MAIN_KNOWLAGE = (
     "Вот самые базовые знания по предметной области: "
@@ -219,17 +217,6 @@ re_write_prompt = ChatPromptTemplate.from_messages(
 )
 
 question_rewriter = re_write_prompt | llm | StrOutputParser()
-# question_rewriter.invoke({"question": question})
-
-### Search
-
-from langchain_community.tools.tavily_search import TavilySearchResults
-
-web_search_tool = TavilySearchResults(k=10)
-
-from typing import List
-
-from typing_extensions import TypedDict
 
 
 class GraphState(TypedDict):
@@ -341,13 +328,8 @@ def decide_to_generate(state):
     filtered_documents = state["documents"]
 
     if not filtered_documents:
-        # All documents have been filtered check_relevance
-        # We will re-generate a new query
-        # print("---РЕШЕНИЕ: ВСЕ ДОКУМЕНТЫ НЕ РЕЛЕВАНТНЫ ВОПРОСУ - ПРЕОБРАЗУЕМ ВОПРОС---")
         return "transform_query"
     else:
-        # We have relevant documents, so generate answer
-        # print("---РЕШЕНИЕ: ГЕНЕРАЦИЯ ОТВЕТА---")
         return "generate"
 
 
