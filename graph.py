@@ -56,9 +56,10 @@ class RouteQuery(BaseModel):
     )
 
 
-# LLM with function call
-llm = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=False)
-llm_with_censor = GigaChat(model="GigaChat-Pro-Preview", timeout=600, profanity_check=True)
+# model="GigaChat-Pro-Preview"
+model = "GigaChat-Pro"
+llm = GigaChat(model=model, timeout=600, profanity_check=False)
+llm_with_censor = GigaChat(model=model, timeout=600, profanity_check=True)
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
 # Prompt
