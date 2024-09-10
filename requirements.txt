@@ -1,4 +1,4 @@
-gigachain_community==0.2.12
+gigachain_community==0.2.12post2
 aiogram==3.12.0
 gigachain_openai==0.1.22
 python-dotenv==1.0.1

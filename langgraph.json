@@ -1,7 +1,10 @@
 {
-  "dockerfile_lines": [],
+  "dockerfile_lines": [
+    "RUN pip uninstall langchain_core langgraph -y"
+  ],
   "graphs": {
-    "agent": "./graph.py:graph"
+    "agent": "./graph.py:graph",
+    "agent_2": "./graph_2.py:graph"
   },
   "env": ".env",
   "python_version": "3.12",
