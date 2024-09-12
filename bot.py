@@ -5,7 +5,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from dotenv import find_dotenv, load_dotenv
 
-from graph import graph
+from graph_2 import graph
 
 load_dotenv(find_dotenv())
 
@@ -14,17 +14,6 @@ TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 # Инициализация бота
 bot = Bot(token=TG_BOT_TOKEN)
 dp = Dispatcher()
-
-
-emojis = {
-    "web_search": "🌍🔍",
-    "retrieve": "📚🔍",
-    "grade_documents": "📚⬆️",
-    "generate": "📚🧠",
-    "self_answer": "🧠🧠",
-    "transform_query": "🔄",
-    "finalizing": "✅",
-}
 
 
 @dp.message()
@@ -64,7 +53,7 @@ async def handle_message(message: types.Message):
                 if key == last_step:
                     continue
                 await answer.edit_text(
-                    f"Current step - {key} " + emojis.get(key, "") + "..."
+                    f"Current step - {key} " + "..."
                 )
                 last_step = key
         await answer.delete()

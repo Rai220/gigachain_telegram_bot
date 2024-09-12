@@ -26,7 +26,7 @@ index = pc.Index(index_name)
 embeddings = OpenAIEmbeddings()
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever(k=4)
-# web_search_tool = TavilySearchResults(k=10)
+
 
 MAIN_KNOWLAGE = (
     "Вот самые базовые знания по предметной области: "
@@ -45,8 +45,6 @@ def _get_original_question(state) -> str:
     else:
         return ""
 
-
-# Data model
 class RouteQuery(BaseModel):
     """Какой инструмент нужен для ответа на вопрос пользователя"""
 
@@ -56,7 +54,6 @@ class RouteQuery(BaseModel):
     )
 
 
-# model="GigaChat-Pro-Preview"
 model = "GigaChat-Pro"
 llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
 llm_with_censor = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
@@ -117,26 +114,6 @@ class GradeAnswer(BaseModel):
         ..., description="Отвечает ли ответ на вопрос yes или no"
     )
 
-
-# LLM with function call
-structured_llm_grader = llm.with_structured_output(GradeAnswer)
-
-# Prompt
-
-system = f"""Ты оцениваешь, отвечает ли ответ на вопрос / решает ли он вопрос. \n 
-{MAIN_KNOWLAGE}
-Дай бинарную оценку yes или no. yes означает, что ответ решает вопрос."""
-answer_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system),
-        (
-            "human",
-            "Вопрос пользователя: \n\n {question} \n\n ответ модели: {generation}",
-        ),
-    ]
-)
-
-answer_grader = answer_prompt | structured_llm_grader
 
 system = f"""Ты должен переписать запрос пользователя таким образом, чтобы он стал более конкретным и понятным, 
 так как ассистент не смог ответить на предыдущую версию вопроса.
@@ -292,14 +269,15 @@ def finalize(state):
             ("system", system),
             (
                 "human",
-                """Вот документы, которые были использованы для генерации ответа:
+                """Вот документы, которые были найдены по теме вопроса пользоватея:
 
 <documents>
-{{documents}}
+{documents}
 </documents>
 
-Вот исходный ответ: \n\n {generation}. Перепиши его или напиши его улучшую версию. Не задавай никаких дополнительных вопросов, 
-если ты не понимаешь что можно улушчить, то просто напиши исходный ответ.
+Вот исходный ответ: \n\n {generation}. Перепиши его или напиши его улучшенную версию. Не задавай никаких дополнительных вопросов, 
+если ты не понимаешь что можно улушчить, то просто напиши исходный ответ. 
+Обязательно добавь ссылки на документы в которых пользователь может найти дополнительную информацию. Возьми их в поле Document metadata source.
 """,
             ),
         ]
@@ -376,5 +354,7 @@ workflow.add_edge("👨‍⚖️ Finalizer", END)
 workflow.add_edge("👨‍🎨 Improviser 1", END)
 
 # Compile
-graph = workflow.compile()
-# graph.invoke({"question": "Как обновтиь gigachain?"})
+graph = workflow.compile(debug=False)
+
+# res = graph.invoke({"question": "Как обновить gigachain?"})
+# print(res)
