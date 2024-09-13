@@ -57,7 +57,7 @@ async def handle_message(message: types.Message):
                 )
                 last_step = key
         await answer.delete()
-        await message.answer(value["generation"])
+        await message.answer(value["generation"], parse_mode='MarkdownV2')
     except Exception as e:
         logging.error(f"Error processing user request: {e}", exc_info=True)
         await message.answer(
