@@ -19,7 +19,7 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gpt-2"
+index_name = "gigachain-test-index-gpt-4"
 index = pc.Index(index_name)
 
 # embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
@@ -34,6 +34,7 @@ MAIN_KNOWLAGE = (
     "GigaChat API (апи) - это API для взаимодействия с GigaChat по HTTP с помощью REST запросов. "
     "GigaChain - это SDK на Python для работы с GigaChat API. Русскоязычный форк библиотеки LangChain. "
     "GigaGraph - это дополнение для GigaChain, который позволяет создавать мультиагентные системы, описывая их в виде графов. "
+    "Обучение GigaChat выполняется командой разработчиков. Дообучение и файнтюнинг для конечных пользователей на данный момент не доступно. "
     "Для получения доступа к API нужно зарегистрироваться на developers.sber.ru и получить авторизационные данные."
 )
 
@@ -304,6 +305,18 @@ def finalize(state):
 
 Если ответ на вопрос пользователя это реплика, например приветствие, то просто оставь её без изменений.
 Если вопрос пользователя похож на продолжение диалога, то сообщи пользователю, что ты не видишь историю предыдущей переписки и попроси сформулировать вопрос целиком.
+
+Также можно добавить дополнительные ссылки (если это будет полезно пользователю):
+https://developers.sber.ru/docs/ru/gigachat/api/overview - документация по API
+https://github.com/ai-forever/gigachain - репозиторий GigaChain на GitHub с исходными кодами SDK и примерами
+https://developers.sber.ru/docs/ru/gigachain/overview - документация по GigaChain
+https://developers.sber.ru/docs/ru/gigachain/gigagraph/overview - документация по GigaGraph
+https://www.youtube.com/watch?v=HAg-GFKl1rc&ab_channel=SaluteTech - видео "быстрый старт по работе с GigaChat API за 1 минуту"
+https://developers.sber.ru/help/gigachat-api - база знаний по gigachat api
+https://courses.sberuniversity.ru/llm-gigachat/ - курс по LLM GigaChat
+
+При написании ответа используй markdown для форматирования текста.
+
 {_get_original_question(state)}
     """
     finalize_prompt = ChatPromptTemplate.from_messages(
