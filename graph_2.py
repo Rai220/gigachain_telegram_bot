@@ -369,6 +369,6 @@ workflow.add_edge("👨‍🎨 Improviser 1", END)
 # Compile
 graph = workflow.compile(debug=False)
 
-# For debugging purposes
-res = graph.invoke({"question": "Напиши пример json описания функции погоды для гигачата"})
-print(res)
+# # For debugging purposes
+# res = graph.invoke({"question": "Напиши пример json описания функции погоды для гигачата"})
+# print(res)
