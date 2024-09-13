@@ -19,7 +19,7 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gpt-4"
+index_name = "gigachain-test-index-gpt-5"
 index = pc.Index(index_name)
 
 # embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
@@ -368,7 +368,3 @@ workflow.add_edge("👨‍🎨 Improviser 1", END)
 
 # Compile
 graph = workflow.compile(debug=False)
-
-# # For debugging purposes
-# res = graph.invoke({"question": "Напиши пример json описания функции погоды для гигачата"})
-# print(res)
