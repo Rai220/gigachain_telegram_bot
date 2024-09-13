@@ -61,12 +61,15 @@ llm_with_censor = GigaChat(model=model, timeout=600, profanity_check=False, temp
 
 
 def decide_to_transform(state):
-    class GradeHallucinations(BaseModel):
-        """Оценка наличия галлюцинаций в ответе"""
+    transform_count = state.get("transform_count", 0)
+    if transform_count > 1:
+        return "yes"
+    # class GradeHallucinations(BaseModel):
+    #     """Оценка наличия галлюцинаций в ответе"""
 
-        binary_score: Literal["yes", "no"] = Field(
-            ..., description="Ответ на основании фактов - yes или no"
-        )
+    #     binary_score: Literal["yes", "no"] = Field(
+    #         ..., description="Ответ на основании фактов - yes или no"
+    #     )
 
     # Prompt
     system = f"""Ты оцениваешь, основана ли генерация модели на данных в документе. \n 
@@ -83,30 +86,27 @@ def decide_to_transform(state):
 </documents>
 
 Генерация модели: {generation}. 
-Отвечай yes только если ответ моедли основан на данных из документа и ключевых знаниях, иначе - no""",
+Отвечай yes только если ответ моедли основан на данных из документа и ключевых знаниях, иначе - no. Ты должен ответить только yes или no и ничего больше.""",
             ),
         ]
     )
-    hallucination_grader = hallucination_prompt | llm.with_structured_output(GradeHallucinations)    
+    hallucination_grader = hallucination_prompt | llm # .with_structured_output(GradeHallucinations)    
     
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
-    transform_count = state.get("transform_count", 0)
 
-    score = hallucination_grader.invoke(
+    resp = hallucination_grader.invoke(
         {"question": question, "documents": documents, "generation": generation}
-    )
-    grade = score.binary_score
-
-    if grade == "yes" or transform_count > 0:
-        return "yes"
-    else:
+    ).content
+    
+    # Fail-safe technique against hallucinations
+    if "no" in resp.lower().strip():
         return "no"
+    return "yes"
+
 
 ### Answer Grader
-
-
 # Data model
 class GradeAnswer(BaseModel):
     """Решение - отвечает ли ответ на вопрос."""
@@ -280,7 +280,7 @@ def finalize(state):
 если ты не понимаешь что можно улушчить, то просто напиши исходный ответ. 
 Обязательно добавь ссылки на документы в которых пользователь может найти дополнительную информацию.
 
-Также можно добавить дополнительные ссылки (если это будет полезно и уместно пользователю):
+Также при необходимости можно добавить дополнительные ссылки (если это будет полезно и уместно пользователю):
 https://developers.sber.ru/docs/ru/gigachat/api/overview - документация по API
 https://github.com/ai-forever/gigachain - репозиторий GigaChain на GitHub с исходными кодами SDK и примерами
 https://developers.sber.ru/docs/ru/gigachain/overview - документация по GigaChain
@@ -339,7 +339,7 @@ def decide_to_generate(state):
 
 workflow = StateGraph(GraphState)
 
-workflow.add_node("👨‍💻 Documents Retriver", retrieve)  # retrieve
+workflow.add_node("👨‍💻 Documents Retriever", retrieve)  # retrieve
 workflow.add_node("🧑‍🎓 Consultant", generate)  # generatae
 workflow.add_node("👨‍🎨 Improviser 1", self_answer)  # retrieve
 workflow.add_node("👷‍♂️ Query rewriter", transform_query)  # transform_query
@@ -349,11 +349,11 @@ workflow.add_conditional_edges(
     START,
     route_question,
     {
-        "vectorstore": "👨‍💻 Documents Retriver",
+        "vectorstore": "👨‍💻 Documents Retriever",
         "self_answer": "👨‍🎨 Improviser 1",
     },
 )
-workflow.add_edge("👨‍💻 Documents Retriver", "🧑‍🎓 Consultant")
+workflow.add_edge("👨‍💻 Documents Retriever", "🧑‍🎓 Consultant")
 workflow.add_conditional_edges(
     "🧑‍🎓 Consultant",
     decide_to_transform,
@@ -362,12 +362,13 @@ workflow.add_conditional_edges(
         "no": "👷‍♂️ Query rewriter",
     },
 )
-workflow.add_edge("👷‍♂️ Query rewriter", "👨‍💻 Documents Retriver")
+workflow.add_edge("👷‍♂️ Query rewriter", "👨‍💻 Documents Retriever")
 workflow.add_edge("👨‍⚖️ Finalizer", END)
 workflow.add_edge("👨‍🎨 Improviser 1", END)
 
 # Compile
 graph = workflow.compile(debug=False)
 
-# res = graph.invoke({"question": "Как обновить gigachain?"})
-# print(res)
+# For debugging purposes
+res = graph.invoke({"question": "Напиши пример json описания функции погоды для гигачата"})
+print(res)

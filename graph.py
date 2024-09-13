@@ -417,7 +417,7 @@ workflow = StateGraph(GraphState)
 
 # Define the nodes
 workflow.add_node("🕵️‍♂️ Web Researcher", web_search)  # web search
-workflow.add_node("👨‍💻 Documents Retriver", retrieve)  # retrieve
+workflow.add_node("👨‍💻 Documents Retriever", retrieve)  # retrieve
 workflow.add_node("👨‍🔧 Document viewer", grade_documents)  # grade documents
 workflow.add_node("🧑‍🎓 Consultant", generate)  # generatae
 workflow.add_node("👨‍🎨 Improviser", generate)  # retrieve
@@ -430,13 +430,13 @@ workflow.add_conditional_edges(
     route_question,
     {
         "web_search": "🕵️‍♂️ Web Researcher",
-        "vectorstore": "👨‍💻 Documents Retriver",
+        "vectorstore": "👨‍💻 Documents Retriever",
         "self_answer": "👨‍🎨 Improviser",
     },
 )
 workflow.add_edge("👨‍🎨 Improviser", "👨‍⚖️ Finalizer")
 workflow.add_edge("🕵️‍♂️ Web Researcher", "🧑‍🎓 Consultant")
-workflow.add_edge("👨‍💻 Documents Retriver", "👨‍🔧 Document viewer")
+workflow.add_edge("👨‍💻 Documents Retriever", "👨‍🔧 Document viewer")
 workflow.add_conditional_edges(
     "👨‍🔧 Document viewer",
     decide_to_generate,
@@ -462,7 +462,7 @@ workflow.add_conditional_edges(
     route_question,
     {
         "web_search": "🕵️‍♂️ Web Researcher",
-        "vectorstore": "👨‍💻 Documents Retriver",
+        "vectorstore": "👨‍💻 Documents Retriever",
         "self_answer": "👨‍🎨 Improviser"
     },
 )
