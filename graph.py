@@ -219,11 +219,11 @@ class GraphState(TypedDict):
     search_count: int
 
 
-def retrieve(state):
+async def retrieve(state):
     question = state["question"]
 
     # Retrieval
-    documents = retriever.invoke(question)
+    documents = await retriever.ainvoke(question)
     retrieve_count = state.get("retrieve_count", 0)
     if not retrieve_count:
         retrieve_count = 0
@@ -233,7 +233,7 @@ def retrieve(state):
         "retrieve_count": retrieve_count + 1,
     }
 
-def generate(state):
+async def generate(state):
     question = state["question"]
     documents = state.get("documents", [])
 
@@ -260,18 +260,18 @@ def generate(state):
 
     # RAG generation
     rag_chain = support_prompt | llm | StrOutputParser()
-    generation = rag_chain.invoke({"context": documents, "question": question})
+    generation = await rag_chain.ainvoke({"context": documents, "question": question})
     return {"documents": documents, "question": question, "generation": generation}
 
 
-def grade_documents(state):
+async def grade_documents(state):
     question = state["question"]
     documents = state["documents"]
 
     # Score each doc
     filtered_docs = []
     for d in documents:
-        score = retrieval_grader.invoke(
+        score = await retrieval_grader.ainvoke(
             {"question": question, "document": d.page_content}
         )
         grade = score.binary_score
@@ -282,7 +282,7 @@ def grade_documents(state):
     return {"documents": filtered_docs, "question": question}
 
 
-def transform_query(state):
+async def transform_query(state):
     original_question = state["original_question"]
     if original_question == None:
         original_question = state["question"]
@@ -290,11 +290,11 @@ def transform_query(state):
     documents = state["documents"]
 
     # Re-write question
-    better_question = question_rewriter.invoke({"question": question})
+    better_question = await question_rewriter.ainvoke({"question": question})
     return {"documents": documents, "question": better_question, "original_question": original_question}
 
 
-def finalize(state):
+async def finalize(state):
     generation = state["generation"]
 
     system = f"""Ты финализируешь ответы специалиста технической поддержки для пользователя.
@@ -332,15 +332,15 @@ https://courses.sberuniversity.ru/llm-gigachat/ - курс по LLM GigaChat
     finalizer = finalize_prompt | llm_with_censor | StrOutputParser()
 
     # Re-write question
-    generation = finalizer.invoke({"generation": generation})
+    generation = await finalizer.ainvoke({"generation": generation})
     return {"generation": generation}
 
 
-def web_search(state):
+async def web_search(state):
     question = state["question"]
 
     # Web search
-    docs = web_search_tool.invoke({"query": question})
+    docs = await web_search_tool.ainvoke({"query": question})
     web_results = "\n".join([d["content"] for d in docs])
     web_results = Document(page_content=web_results)
 
@@ -357,9 +357,9 @@ def web_search(state):
 ### Edges ###
 
 
-def route_question(state):
+async def route_question(state):
     question = state["question"]
-    source = question_router.invoke({"question": question})
+    source = await question_router.ainvoke({"question": question})
     search_count = state.get("search_count", 0)
     retrieve_count = state.get("retrieve_count", 0)
     if not search_count:
@@ -391,19 +391,19 @@ def decide_to_generate(state):
         return "generate"
 
 
-def grade_generation_v_documents_and_question(state):
+async def grade_generation_v_documents_and_question(state):
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
 
-    score = hallucination_grader.invoke(
+    score = await hallucination_grader.ainvoke(
         {"documents": documents, "generation": generation}
     )
     grade = score.binary_score
 
     # Check hallucination
     if grade == "yes":
-        score = answer_grader.invoke({"question": question, "generation": generation})
+        score = await answer_grader.ainvoke({"question": question, "generation": generation})
         grade = score.binary_score
         if grade == "yes":
             return "useful"

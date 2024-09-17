@@ -48,7 +48,7 @@ async def handle_message(message: types.Message):
         answer = await message.answer("Обрабатываю ваш запрос...")
         inputs = {"question": user_message}
         last_step = None
-        for output in graph.stream(inputs):
+        async for output in graph.astream(inputs):
             for key, value in output.items():
                 if key == last_step:
                     continue
