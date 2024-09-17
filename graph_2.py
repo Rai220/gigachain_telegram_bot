@@ -34,7 +34,10 @@ MAIN_KNOWLAGE = (
     "GigaChat API (апи) - это API для взаимодействия с GigaChat по HTTP с помощью REST запросов. "
     "GigaChain - это SDK на Python для работы с GigaChat API. Русскоязычный форк библиотеки LangChain. "
     "GigaGraph - это дополнение для GigaChain, который позволяет создавать мультиагентные системы, описывая их в виде графов. "
-    "Обучение GigaChat выполняется командой разработчиков. Дообучение и файнтюнинг для конечных пользователей на данный момент не доступно. "
+    "Обучение GigaChat выполняется командой разработчиков. Дообучение и файнтюнинг для конечных пользователей на данный момент не доступны. "
+    "Пользователям доступны несколько моделей GigaChat: Lite (контекст 8192 токенов), Plus (контекст 32768 токенов) и Pro (контекст 8192 токенов). "
+    "GigaChat Pro лучше следует сложным инструкциям и может выполнять более комплексные задачи: значительно повышено качество суммаризации, переписывания и редактирования текстов, ответов на различные вопросы. "
+    "В рамках freemium-режима пользователи физлица получают 1 000 000 бесплатных токенов для генерации текста: 950 000 токенов для модели GigaChat Lite и 50 000 токенов для модели GigaChat Pro. Генерация текста выполняется в одном потоке. Лимит обновляется раз в 12 месяцев. "
     "Для получения доступа к API нужно зарегистрироваться на developers.sber.ru и получить авторизационные данные."
 )
 
@@ -46,30 +49,18 @@ def _get_original_question(state) -> str:
     else:
         return ""
 
-class RouteQuery(BaseModel):
-    """Какой инструмент нужен для ответа на вопрос пользователя"""
-
-    datasource: Literal["vectorstore", "self_answer"] = Field(
-        ...,
-        description="Метод обработки запроса",
-    )
-
 
 model = "GigaChat-Pro"
 llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
-llm_with_censor = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
+llm_with_censor = GigaChat(
+    model=model, timeout=600, profanity_check=False, temperature=0.0001
+)
 
 
 def decide_to_transform(state):
     transform_count = state.get("transform_count", 0)
     if transform_count > 1:
         return "yes"
-    # class GradeHallucinations(BaseModel):
-    #     """Оценка наличия галлюцинаций в ответе"""
-
-    #     binary_score: Literal["yes", "no"] = Field(
-    #         ..., description="Ответ на основании фактов - yes или no"
-    #     )
 
     # Prompt
     system = f"""Ты оцениваешь, основана ли генерация модели на данных в документе. \n 
@@ -90,8 +81,10 @@ def decide_to_transform(state):
             ),
         ]
     )
-    hallucination_grader = hallucination_prompt | llm # .with_structured_output(GradeHallucinations)    
-    
+    hallucination_grader = (
+        hallucination_prompt | llm
+    )  # .with_structured_output(GradeHallucinations)
+
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
@@ -99,7 +92,7 @@ def decide_to_transform(state):
     resp = hallucination_grader.invoke(
         {"question": question, "documents": documents, "generation": generation}
     ).content
-    
+
     # Fail-safe technique against hallucinations
     if "no" in resp.lower().strip():
         return "no"
@@ -303,6 +296,15 @@ https://courses.sberuniversity.ru/llm-gigachat/ - курс по LLM GigaChat
     return {"generation": generation}
 
 
+class RouteQuery(BaseModel):
+    """Какой инструмент нужен для ответа на вопрос пользователя"""
+
+    datasource: Literal["vectorstore", "self_answer"] = Field(
+        ...,
+        description="Метод обработки запроса",
+    )
+
+
 def route_question(state):
     structured_llm_router = llm.with_structured_output(RouteQuery)
 
@@ -311,7 +313,7 @@ def route_question(state):
 обратиться в базу знаний по GigaChat и GigaChain (vectorstore) или ты можешь ответить сам без использования дополнительных данных (self_answer)
 {MAIN_KNOWLAGE}
 Вернуи self_answer (самостоятельный ответ), только если вопрос пользователя очень общий и абсолютно понятный или если это не вопрос, а реплика, например 
-приветствие. Во всех остальных случаях получи дополнительные данные из базы знаний (vectorstore).
+приветствие или шутка. Во всех остальных случаях получи дополнительные данные из базы знаний (vectorstore).
 """
     route_prompt = ChatPromptTemplate.from_messages(
         [
@@ -341,7 +343,7 @@ workflow = StateGraph(GraphState)
 
 workflow.add_node("👨‍💻 Documents Retriever", retrieve)  # retrieve
 workflow.add_node("🧑‍🎓 Consultant", generate)  # generatae
-workflow.add_node("👨‍🎨 Improviser 1", self_answer)  # retrieve
+workflow.add_node("👨‍🎨 Improviser", self_answer)  # retrieve
 workflow.add_node("👷‍♂️ Query rewriter", transform_query)  # transform_query
 workflow.add_node("👨‍⚖️ Finalizer", finalize)  # transform_query
 
@@ -350,7 +352,7 @@ workflow.add_conditional_edges(
     route_question,
     {
         "vectorstore": "👨‍💻 Documents Retriever",
-        "self_answer": "👨‍🎨 Improviser 1",
+        "self_answer": "👨‍🎨 Improviser",
     },
 )
 workflow.add_edge("👨‍💻 Documents Retriever", "🧑‍🎓 Consultant")
@@ -364,7 +366,7 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("👷‍♂️ Query rewriter", "👨‍💻 Documents Retriever")
 workflow.add_edge("👨‍⚖️ Finalizer", END)
-workflow.add_edge("👨‍🎨 Improviser 1", END)
+workflow.add_edge("👨‍🎨 Improviser", END)
 
 # Compile
 graph = workflow.compile(debug=False)
