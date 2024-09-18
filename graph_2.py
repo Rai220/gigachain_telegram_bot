@@ -273,7 +273,7 @@ async def finalize(state):
 если ты не понимаешь что можно улушчить, то просто напиши исходный ответ. 
 Обязательно добавь ссылки на документы в которых пользователь может найти дополнительную информацию.
 
-Также при необходимости можно добавить дополнительные ссылки (если это будет полезно и уместно пользователю):
+Также при необходимости можно добавить дополнительные ссылки (если это будет полезно и уместно для пользователя):
 https://developers.sber.ru/docs/ru/gigachat/api/overview - документация по API
 https://github.com/ai-forever/gigachain - репозиторий GigaChain на GitHub с исходными кодами SDK и примерами
 https://developers.sber.ru/docs/ru/gigachain/overview - документация по GigaChain
@@ -281,6 +281,10 @@ https://developers.sber.ru/docs/ru/gigachain/gigagraph/overview - докумен
 https://www.youtube.com/watch?v=HAg-GFKl1rc&ab_channel=SaluteTech - видео "быстрый старт по работе с GigaChat API за 1 минуту"
 https://developers.sber.ru/help/gigachat-api - база знаний по gigachat api
 https://courses.sberuniversity.ru/llm-gigachat/ - курс по LLM GigaChat
+https://developers.sber.ru/docs/ru/gigachat/models - список моделей GigaChat
+https://developers.sber.ru/docs/ru/gigachat/api/tariffs - тарифы GigaChat
+
+Используй эти ссылки только в случае, если вопрос пользователя или твой ответ релевантны содержимому.
 Но не добавляй слишком много ссылок. 1-2 будет достаточно или даже можно без ссылок, если ответ и так исчерпывающий.
 
 При написании ответа используй разметку markdown.
