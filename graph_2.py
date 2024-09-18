@@ -57,7 +57,7 @@ llm_with_censor = GigaChat(
 )
 
 
-def decide_to_transform(state):
+async def decide_to_transform(state):
     transform_count = state.get("transform_count", 0)
     if transform_count > 1:
         return "yes"
@@ -89,10 +89,10 @@ def decide_to_transform(state):
     documents = state["documents"]
     generation = state["generation"]
 
-    resp = hallucination_grader.invoke(
+    resp = (await hallucination_grader.ainvoke(
         {"question": question, "documents": documents, "generation": generation}
-    ).content
-
+    )).content
+    
     # Fail-safe technique against hallucinations
     if "no" in resp.lower().strip():
         return "no"
@@ -137,11 +137,11 @@ class GraphState(TypedDict):
     transform_count: int
 
 
-def retrieve(state):
+async def retrieve(state):
     question = state["question"]
 
     # Retrieval
-    documents = retriever.invoke(question)
+    documents = await retriever.ainvoke(question)
     retrieve_count = state.get("retrieve_count", 0)
     if not retrieve_count:
         retrieve_count = 0
@@ -152,7 +152,7 @@ def retrieve(state):
     }
 
 
-def generate(state):
+async def generate(state):
     question = state["question"]
     documents = state.get("documents", [])
 
@@ -190,11 +190,11 @@ def generate(state):
 
     # RAG generation
     rag_chain = support_prompt | llm | StrOutputParser()
-    generation = rag_chain.invoke({"documents": documents, "question": question})
+    generation = await rag_chain.ainvoke({"documents": documents, "question": question})
     return {"documents": documents, "question": question, "generation": generation}
 
 
-def self_answer(state):
+async def self_answer(state):
     """Самостоятельный ответ на вопрос пользователя"""
     question = state["question"]
 
@@ -219,11 +219,11 @@ def self_answer(state):
 
     # RAG generation
     self_chain = support_prompt | llm | StrOutputParser()
-    generation = self_chain.invoke({"question": question})
+    generation = await self_chain.ainvoke({"question": question})
     return {"generation": generation}
 
 
-def transform_query(state):
+async def transform_query(state):
     original_question = state["original_question"]
     if original_question == None:
         original_question = state["question"]
@@ -235,7 +235,7 @@ def transform_query(state):
     transform_count += 1
 
     # Re-write question
-    better_question = question_rewriter.invoke({"question": question})
+    better_question = await question_rewriter.ainvoke({"question": question})
     return {
         "documents": documents,
         "question": better_question,
@@ -244,7 +244,7 @@ def transform_query(state):
     }
 
 
-def finalize(state):
+async def finalize(state):
     generation = state["generation"]
     documents = state.get("documents", "")
 
@@ -292,7 +292,7 @@ https://courses.sberuniversity.ru/llm-gigachat/ - курс по LLM GigaChat
     finalizer = finalize_prompt | llm_with_censor | StrOutputParser()
 
     # Re-write question
-    generation = finalizer.invoke({"generation": generation, "documents": documents})
+    generation = await finalizer.ainvoke({"generation": generation, "documents": documents})
     return {"generation": generation}
 
 
@@ -305,7 +305,7 @@ class RouteQuery(BaseModel):
     )
 
 
-def route_question(state):
+async def route_question(state):
     structured_llm_router = llm.with_structured_output(RouteQuery)
 
     # Prompt
@@ -325,7 +325,7 @@ def route_question(state):
     question_router = route_prompt | structured_llm_router
 
     question = state["question"]
-    source = question_router.invoke({"question": question})
+    source = await question_router.ainvoke({"question": question})
     return source.datasource
 
 
