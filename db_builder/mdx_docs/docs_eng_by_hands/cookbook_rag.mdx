@@ -1,0 +1,288 @@
+URL: https://developers.sber.ru/docs/ru/gigachain/expression-language/cookbook/retrieval
+[Conversational Retrieval Chain](#conversational-retrieval-chain) [With Memory and returning source documents](#with-memory-and-returning-source-documents)
+
+# RAG
+
+Обновлено 24 мая 2024
+
+Let's look at adding in a retrieval step to a prompt and LLM, which adds up to a "retrieval-augmented generation" chain
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+%pip install --upgrade --quiet  langchain langchain-openai faiss-cpu tiktoken
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+from operator import itemgetter
+
+from langchain_community.vectorstores import FAISS
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+vectorstore = FAISS.from_texts(
+    ["harrison worked at kensho"], embedding=OpenAIEmbeddings()
+)
+retriever = vectorstore.as_retriever()
+
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+
+model = ChatOpenAI()
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+chain.invoke("where did harrison work?")
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    'Harrison worked at Kensho.'
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+
+Answer in the following language: {language}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+
+chain = (
+    {
+        "context": itemgetter("question") | retriever,
+        "question": itemgetter("question"),
+        "language": itemgetter("language"),
+    }
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+chain.invoke({"question": "where did harrison work", "language": "italian"})
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    'Harrison ha lavorato a Kensho.'
+
+```
+
+## Conversational Retrieval Chain﻿
+
+We can easily add in conversation history. This primarily means adding in chat\_message\_history
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+from langchain.schema import format_document
+from langchain_core.messages import AIMessage, HumanMessage, get_buffer_string
+from langchain_core.runnables import RunnableParallel
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+from langchain.prompts.prompt import PromptTemplate
+
+_template = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
+
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Standalone question:"""
+CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+"""
+ANSWER_PROMPT = ChatPromptTemplate.from_template(template)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(template="{page_content}")
+
+def _combine_documents(
+    docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"
+):
+    doc_strings = [format_document(doc, document_prompt) for doc in docs]
+    return document_separator.join(doc_strings)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+_inputs = RunnableParallel(
+    standalone_question=RunnablePassthrough.assign(
+        chat_history=lambda x: get_buffer_string(x["chat_history"])
+    )
+    | CONDENSE_QUESTION_PROMPT
+    | ChatOpenAI(temperature=0)
+    | StrOutputParser(),
+)
+_context = {
+    "context": itemgetter("standalone_question") | retriever | _combine_documents,
+    "question": lambda x: x["standalone_question"],
+}
+conversational_qa_chain = _inputs | _context | ANSWER_PROMPT | ChatOpenAI()
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+conversational_qa_chain.invoke(
+    {
+        "question": "where did harrison work?",
+        "chat_history": [],
+    }
+)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    AIMessage(content='Harrison was employed at Kensho.')
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+conversational_qa_chain.invoke(
+    {
+        "question": "where did he work?",
+        "chat_history": [\
+            HumanMessage(content="Who wrote this notebook?"),\
+            AIMessage(content="Harrison"),\
+        ],
+    }
+)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    AIMessage(content='Harrison worked at Kensho.')
+
+```
+
+### With Memory and returning source documents﻿
+
+This shows how to use memory with the above. For memory, we need to manage that outside at the memory. For returning the retrieved documents, we just need to pass them through all the way.
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+from operator import itemgetter
+
+from langchain.memory import ConversationBufferMemory
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+memory = ConversationBufferMemory(
+    return_messages=True, output_key="answer", input_key="question"
+)
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+# First we add a step to load memory
+# This adds a "memory" key to the input object
+loaded_memory = RunnablePassthrough.assign(
+    chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"),
+)
+# Now we calculate the standalone question
+standalone_question = {
+    "standalone_question": {
+        "question": lambda x: x["question"],
+        "chat_history": lambda x: get_buffer_string(x["chat_history"]),
+    }
+    | CONDENSE_QUESTION_PROMPT
+    | ChatOpenAI(temperature=0)
+    | StrOutputParser(),
+}
+# Now we retrieve the documents
+retrieved_documents = {
+    "docs": itemgetter("standalone_question") | retriever,
+    "question": lambda x: x["standalone_question"],
+}
+# Now we construct the inputs for the final prompt
+final_inputs = {
+    "context": lambda x: _combine_documents(x["docs"]),
+    "question": itemgetter("question"),
+}
+# And finally, we do the part that returns the answers
+answer = {
+    "answer": final_inputs | ANSWER_PROMPT | ChatOpenAI(),
+    "docs": itemgetter("docs"),
+}
+# And now we put it all together!
+final_chain = loaded_memory | standalone_question | retrieved_documents | answer
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+inputs = {"question": "where did harrison work?"}
+result = final_chain.invoke(inputs)
+result
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    {'answer': AIMessage(content='Harrison was employed at Kensho.'),
+ 'docs': [Document(page_content='harrison worked at kensho')]}
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+# Note that the memory does not save automatically
+# This will be improved in the future
+# For now you need to save it yourself
+memory.save_context(inputs, {"answer": result["answer"].content})
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+memory.load_memory_variables({})
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    {'history': [HumanMessage(content='where did harrison work?'),\
+  AIMessage(content='Harrison was employed at Kensho.')]}
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+inputs = {"question": "but where did he really work?"}
+result = final_chain.invoke(inputs)
+result
+
+```
+
+```sc-hsZwpi iRCOPc codeBlockLines_p187
+    {'answer': AIMessage(content='Harrison actually worked at Kensho.'),
+ 'docs': [Document(page_content='harrison worked at kensho')]}
+
+```

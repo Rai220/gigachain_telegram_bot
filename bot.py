@@ -5,7 +5,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from dotenv import find_dotenv, load_dotenv
 
-from graph_2 import graph
+from graph_3 import graph
 
 load_dotenv(find_dotenv())
 
