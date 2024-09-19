@@ -19,7 +19,7 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gpt-5"
+index_name = "gigachain-test-index-gpt-6"
 index = pc.Index(index_name)
 
 # embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
