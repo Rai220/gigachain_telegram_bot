@@ -2,12 +2,13 @@ import csv
 import os
 
 from dotenv import find_dotenv, load_dotenv
+from langchain import hub
 from langchain.evaluation import CotQAEvalChain
 from langchain_community.chat_models import GigaChat
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langsmith import Client
-from langsmith.evaluation import evaluate
+from langsmith.evaluation import evaluate, evaluate_comparative
 
 load_dotenv(find_dotenv())
 os.environ["LANGCHAIN_PROJECT"] = "gigachain_telegram_bot"
@@ -69,9 +70,10 @@ if not client.has_dataset(dataset_name=dataset_name):
         dataset_name=dataset_name,
         description="",
     )
+    top_k = 10
     client.create_examples(
-        inputs=[{"question": q} for q in inputs][:5],
-        outputs=[{"answer": a} for a in outputs][:5],
+        inputs=[{"question": q} for q in inputs][slice(top_k)],
+        outputs=[{"answer": a} for a in outputs][slice(top_k)],
         dataset_id=dataset.id,
     )
 
@@ -119,7 +121,46 @@ def cot_evaluator(run, example) -> dict:
     return {"key": "cot_qa_score", "score": parsed_response["score"]}
 
 
-evaluate(
+def evaluate_pairwise(runs: list, example) -> dict:
+    """
+    A simple evaluator for pairwise answers based on LCEL code solutions
+    """
+    scores = {}
+
+    for i, run in enumerate(runs):
+        scores[run.id] = i
+
+    question = example.inputs["question"]
+    answer_a = runs[0].outputs["answer"]
+    answer_b = runs[1].outputs["answer"]
+
+    grade_prompt = hub.pull("rlm/pairwise-evaluation-lcel-answers")
+    answer_grader = grade_prompt | eval_llm
+
+    response = answer_grader.invoke(
+        {"question": question, "answer_a": answer_a, "answer_b": answer_b}
+    )
+    score = response["Preference"]
+
+    if score == 1:  # Assistant A is preferred
+        scores[runs[0].id] = 1
+        scores[runs[1].id] = 0
+    elif score == 2:  # Assistant B is preferred
+        scores[runs[0].id] = 0
+        scores[runs[1].id] = 1
+    else:
+        scores[runs[0].id] = 0
+        scores[runs[1].id] = 0
+
+    return {"key": "ranked_preference", "scores": scores}
+
+
+sample_question = "Что такое gigachain"
+print(gigachat_lite.invoke(sample_question))
+print(gigachat_pro.invoke(sample_question))
+
+
+experiment_gigachat_lite = evaluate(
     predict_gigachat_lite,
     data=dataset_name,
     evaluators=[cot_evaluator],
@@ -128,11 +169,20 @@ evaluate(
     num_repetitions=1,
 )
 
-evaluate(
+experiment_gigachat_pro = evaluate(
     predict_gigachat_pro,
     data=dataset_name,
     evaluators=[cot_evaluator],
     experiment_prefix="rag-qa-gigachat-pro",
     max_concurrency=4,
     num_repetitions=1,
+)
+
+
+evaluate_comparative(
+    [
+        experiment_gigachat_lite.experiment_name,
+        experiment_gigachat_pro.experiment_name,
+    ],
+    evaluators=[evaluate_pairwise],
 )
