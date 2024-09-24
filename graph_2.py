@@ -2,14 +2,11 @@ import os
 from typing import List, Literal
 
 from dotenv import find_dotenv, load_dotenv
-from langchain.schema import Document
 from langchain_community.chat_models.gigachat import GigaChat
 from langchain_community.embeddings.gigachat import GigaChatEmbeddings
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langgraph.graph import END, START, StateGraph
 from pinecone import Pinecone
@@ -19,16 +16,15 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gpt-7"
+index_name = "gigachain-test-index-gigar"
 index = pc.Index(index_name)
 
-# embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
-embeddings = OpenAIEmbeddings()
+embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever(k=4)
 
 
-MAIN_KNOWLAGE = (
+MAIN_KNOWLEDGE = (
     "Вот самые базовые знания по предметной области: "
     "GigaChat - это большая языковая модель (LLM) от Сбера. "
     "GigaChat API (апи) - это API для взаимодействия с GigaChat по HTTP с помощью REST запросов. "
@@ -51,9 +47,9 @@ def _get_original_question(state) -> str:
 
 
 model = "GigaChat-Pro"
-llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
+llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=1e-15)
 llm_with_censor = GigaChat(
-    model=model, timeout=600, profanity_check=False, temperature=0.0001
+    model=model, timeout=600, profanity_check=False, ttemperature=1e-15
 )
 
 
@@ -64,7 +60,7 @@ async def decide_to_transform(state):
 
     # Prompt
     system = f"""Ты оцениваешь, основана ли генерация модели на данных в документе. \n 
-        {MAIN_KNOWLAGE}
+        {MAIN_KNOWLEDGE}
         Дай бинарную оценку yes или no. yes означает, что ответ основан на данных из документа и ключевых знаниях"""
     hallucination_prompt = ChatPromptTemplate.from_messages(
         [
@@ -111,7 +107,7 @@ class GradeAnswer(BaseModel):
 
 system = f"""Ты должен переписать запрос пользователя таким образом, чтобы он стал более конкретным и понятным, 
 так как ассистент не смог ответить на предыдущую версию вопроса.
-{MAIN_KNOWLAGE}
+{MAIN_KNOWLEDGE}
 
 Если тебе кажется, что вопрос относится к предметной области ключевых знаний, то попробуй обагатить его конкретикой, 
 использовать более корректные технические термины, уточнить дополнительные параметры.
@@ -162,7 +158,7 @@ async def generate(state):
                 "system",
                 f"""Ты - консультант технической поддержки по GigaChat и GigaChain. Ты должен ответить на вопрос пользователя используя ТОЛЬКО найденные 
 документы и базовые знания.
-{MAIN_KNOWLAGE}
+{MAIN_KNOWLEDGE}
 Используй следующие фрагменты найденного контекста, чтобы ответить на вопрос. 
 Если ты не знаешь ответа, просто скажи, что не знаешь. Не придумывай никаких дополнительных фактов. 
 Используй максимум три предложения и давай краткий ответ ответ кратким.
@@ -203,7 +199,7 @@ async def self_answer(state):
             (
                 "system",
                 f"""Ты - консультант технической поддержки по GigaChat и GigaChain. Ты должен ответить на вопрос или реплику пользователя. 
-{MAIN_KNOWLAGE}
+{MAIN_KNOWLEDGE}
 Если ты не знаешь ответа, просто скажи, что не знаешь.
 Используй максимум три предложения и давай краткий ответ ответ кратким. 
 Откажись отвечать на вопрос пользователя, если вопрос провакационный, не относится к техподдержке, просит сказать что-то из истории, 
@@ -249,7 +245,7 @@ async def finalize(state):
     documents = state.get("documents", "")
 
     system = f"""Ты финализируешь ответы специалиста технической поддержки для пользователя.
-{MAIN_KNOWLAGE}
+{MAIN_KNOWLEDGE}
 Посмотри на окончательный ответ, перепиши его понятным, корректным языком, добавив нужные данные, но не делай его слишком длинным.
 Если ответ не относится к теме технической поддержке GigaChat, GigaChain, API и большим языковым моделям, а также работе с ними, 
 то просто напиши, что вопрос не имеет отношения к теме технической поддержке и тебе нечего сказать по этому поводу.
@@ -314,7 +310,7 @@ async def route_question(state):
     # Prompt
     system = f"""Ты эксперт по обработке вопросов от пользователя. Ты должен решить, нужно ли для ответа на вопрос пользователя 
 обратиться в базу знаний по GigaChat и GigaChain (vectorstore) или ты можешь ответить сам без использования дополнительных данных (self_answer)
-{MAIN_KNOWLAGE}
+{MAIN_KNOWLEDGE}
 Вернуи self_answer (самостоятельный ответ), только если вопрос пользователя очень общий и абсолютно понятный или если это не вопрос, а реплика, например 
 приветствие или шутка. Во всех остальных случаях получи дополнительные данные из базы знаний (vectorstore).
 """
