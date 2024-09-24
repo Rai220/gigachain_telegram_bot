@@ -7,8 +7,9 @@ import logging
 
 load_dotenv(find_dotenv())
 
-Bot(token=os.getenv("TG_BOT_TOKEN"))
+bot = Bot(token=os.getenv("TG_BOT_TOKEN"))
 dp = Dispatcher()
+
 
 @dp.message()
 async def handle_message(message: types.Message):
@@ -54,6 +55,7 @@ async def handle_message(message: types.Message):
     except (asyncio.CancelledError, RuntimeError) as e:
         logging.error("Error processing user request: %s", e, exc_info=True)
         await message.answer(f"Произошла ошибка {e}. Пожалуйста, попробуйте еще раз.")
+
 
 async def main():
     dp.message.register(handle_message)

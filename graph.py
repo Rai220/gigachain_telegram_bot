@@ -21,10 +21,12 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gigar"
+index_name = os.environ.get("PINECONE_INDEX_NAME", "gigachain-test-index-gigar")
 index = pc.Index(index_name)
 
-embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
+embeddings = GigaChatEmbeddings(
+    model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
+)
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever()
 web_search_tool = TavilySearchResults(k=10)
@@ -47,12 +49,14 @@ MAIN_KNOWLEDGE = (
     "Для получения доступа к API нужно зарегистрироваться на developers.sber.ru и получить авторизационные данные."
 )
 
+
 def _get_original_question(state) -> str:
     original_question = state.get("original_question", None)
     if original_question is not None:
         return f"Учти, что вопрос пользователя был переписан и изначально звучал так: {original_question}"
     else:
         return ""
+
 
 # Data model
 class RouteQuery(BaseModel):
@@ -64,6 +68,7 @@ self_answer (дополнительные данные не требуются)"
         ...,
         description="Метод поиска",
     )
+
 
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
@@ -395,7 +400,6 @@ async def route_question(state):
 
 
 def decide_to_generate(state):
-    state["question"]
     filtered_documents = state["documents"]
 
     if not filtered_documents:

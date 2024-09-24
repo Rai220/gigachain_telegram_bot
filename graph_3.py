@@ -5,11 +5,9 @@ from dotenv import find_dotenv, load_dotenv
 from langchain.schema import Document
 from langchain_community.chat_models.gigachat import GigaChat
 from langchain_community.embeddings.gigachat import GigaChatEmbeddings
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langgraph.graph import END, START, StateGraph
 from pinecone import Pinecone
@@ -20,10 +18,12 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gigar"
+index_name = os.environ.get("PINECONE_INDEX_NAME", "gigachain-test-index-gigar")
 index = pc.Index(index_name)
 
-embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
+embeddings = GigaChatEmbeddings(
+    model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
+)
 # embeddings = OpenAIEmbeddings()
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever(k=4)
@@ -81,7 +81,7 @@ async def decide_to_transform(state):
 </documents>
 
 Генерация модели: {generation}. 
-Отвечай yes только если ответ моедли основан на данных из документа и ключевых знаниях, иначе - no. Ты должен ответить только yes или no и ничего больше.""",
+Отвечай yes только если ответ модели основан на данных из документа и ключевых знаниях, иначе - no. Ты должен ответить только yes или no и ничего больше.""",
             ),
         ]
     )
@@ -355,7 +355,6 @@ async def route_question(state):
 
 
 def decide_to_generate(state):
-    state["question"]
     filtered_documents = state["documents"]
 
     if not filtered_documents:

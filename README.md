@@ -7,7 +7,11 @@
 
 * db_builder - набор утилит и данных для заполнения векторной базы данных знаниями
 * bot.py - telegram bot
-* graph.py - описание графа мультиагентной системы в нотакции GigaGraph / LangGraph
+* graph_2.py - текущее описание графа мультиагентной системы в нотакции GigaGraph / LangGraph
+-----
+Другие версии бота:
+* graph.py - Adaptive Rag
+* graph_3.py — support_bot v3 (с поиском в интернете и поддержкой Small Talk)
 
 ## Evaluation в GigaLogger
 Ниже приведены ноутбуки, показывающие как можно автоматически замерять качество

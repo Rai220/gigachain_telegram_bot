@@ -16,10 +16,12 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = "gigachain-test-index-gigar"
+index_name = os.environ.get("PINECONE_INDEX_NAME", "gigachain-test-index-gigar")
 index = pc.Index(index_name)
 
-embeddings = GigaChatEmbeddings(model="EmbeddingsGigaR")
+embeddings = GigaChatEmbeddings(
+    model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
+)
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever(k=4)
 
@@ -49,7 +51,7 @@ def _get_original_question(state) -> str:
 model = "GigaChat-Pro"
 llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=1e-15)
 llm_with_censor = GigaChat(
-    model=model, timeout=600, profanity_check=False, ttemperature=1e-15
+    model=model, timeout=600, profanity_check=False, temperature=1e-15
 )
 
 
@@ -329,7 +331,6 @@ async def route_question(state):
 
 
 def decide_to_generate(state):
-    state["question"]
     filtered_documents = state["documents"]
 
     if not filtered_documents:
