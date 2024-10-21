@@ -54,10 +54,10 @@ def _get_original_question(state) -> str:
         return ""
 
 
-model = "GigaChat-Pro"
-llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=0.0001)
+model = "GigaChat-Max"
+llm = GigaChat(model=model, timeout=600, profanity_check=False, temperature=1e-15)
 llm_with_censor = GigaChat(
-    model=model, timeout=600, profanity_check=False, temperature=0.0001
+    model=model, timeout=600, profanity_check=False, temperature=1e-15
 )
 
 
