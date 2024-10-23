@@ -18,13 +18,15 @@ load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
-index_name = os.environ.get("PINECONE_INDEX_NAME", "gigachain-test-index-gigar")
+index_name = os.environ.get("PINECONE_INDEX_NAME", "gigachain-test-index-gpt-9-large")
 index = pc.Index(index_name)
 
-embeddings = GigaChatEmbeddings(
-    model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
-)
-# embeddings = OpenAIEmbeddings()
+# embeddings = GigaChatEmbeddings(
+#     model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
+# )
+
+from langchain_openai.embeddings import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 retriever = vector_store.as_retriever(k=4)
 web_search_tool = TavilySearchResults(k=10)

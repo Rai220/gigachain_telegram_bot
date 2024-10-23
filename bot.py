@@ -52,7 +52,7 @@ async def handle_message(message: types.Message):
         await answer.delete()
         if value:
             await message.answer(value["generation"], parse_mode="Markdown")
-    except (asyncio.CancelledError, RuntimeError) as e:
+    except Exception as e:
         logging.error("Error processing user request: %s", e, exc_info=True)
         await message.answer(f"Произошла ошибка {e}. Пожалуйста, попробуйте еще раз.")
 
