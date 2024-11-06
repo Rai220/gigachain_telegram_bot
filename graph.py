@@ -6,8 +6,8 @@ from typing import List, Literal
 
 from dotenv import find_dotenv, load_dotenv
 from langchain.schema import Document
-from langchain_community.chat_models.gigachat import GigaChat
-from langchain_community.embeddings.gigachat import GigaChatEmbeddings
+from langchain_gigachat.chat_models import GigaChat
+from langchain_gigachat.embeddings import GigaChatEmbeddings
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
