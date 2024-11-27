@@ -220,7 +220,7 @@ async def generate(state):
 async def self_answer(state):
     """Самостоятельный ответ на вопрос пользователя"""
     question = state["question"]
-    documents = state["documents"]
+    documents = state.get("documents", [])
 
     support_prompt = ChatPromptTemplate(
         [
