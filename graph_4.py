@@ -14,7 +14,6 @@ from pinecone import Pinecone
 from typing_extensions import TypedDict
 from typing import Optional
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_core.runnables.config import RunnableConfig
 
 load_dotenv(find_dotenv())
 pinecone_api_key = os.environ.get("PINECONE_API_KEY")
@@ -30,9 +29,6 @@ embeddings = GigaChatEmbeddings(
 
 
 web_search_tool = TavilySearchResults(k=10)
-
-class ConfigSchema(TypedDict):
-    index_name: Optional[str] = "gigachain-test-gigar-newdb"
 
 
 MAIN_KNOWLEDGE = (
@@ -145,8 +141,8 @@ class GraphState(TypedDict):
     transform_count: int
 
 
-async def retrieve(state, config: RunnableConfig):
-    index_name = config["configurable"].get("index_name", "")
+async def retrieve(state):
+    index_name = "gigachain-test-gigar-newdb"
     index = pc.Index(index_name)
     vector_store = PineconeVectorStore(index=index, embedding=embeddings)
     retriever = vector_store.as_retriever(k=4)
@@ -372,7 +368,7 @@ def decide_to_generate(state):
         return "generate"
 
 
-workflow = StateGraph(GraphState, ConfigSchema)
+workflow = StateGraph(GraphState)
 
 workflow.add_node("👨‍💻 Documents Retriever", retrieve)  # retrieve
 workflow.add_node("🧑‍🎓 Consultant", generate)  # generatae
