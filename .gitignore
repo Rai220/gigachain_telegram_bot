@@ -164,3 +164,4 @@ cython_debug/
 db_builder/mdx_docs/course
 firecrowl_parser.py
 parse.json
+.langgraph_api

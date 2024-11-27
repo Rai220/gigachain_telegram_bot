@@ -21,18 +21,18 @@ pinecone_api_key = os.environ.get("PINECONE_API_KEY")
 
 pc = Pinecone(api_key=pinecone_api_key)
 
-# embeddings = GigaChatEmbeddings(
-#     model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
-# )
+embeddings = GigaChatEmbeddings(
+    model=os.environ.get("EMBEDDINGS_MODEL", "EmbeddingsGigaR")
+)
 
-from langchain_openai.embeddings import OpenAIEmbeddings
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+# from langchain_openai.embeddings import OpenAIEmbeddings
+# embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
 
 web_search_tool = TavilySearchResults(k=10)
 
 class ConfigSchema(TypedDict):
-    index_name: Optional[str] = "gigachain-test-index-gpt-9-large"
+    index_name: Optional[str] = "gigachain-test-gigar-newdb"
 
 
 MAIN_KNOWLEDGE = (
