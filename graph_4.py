@@ -7,7 +7,7 @@ from langchain_gigachat.chat_models import GigaChat
 from langchain_gigachat.embeddings import GigaChatEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_pinecone import PineconeVectorStore
 from langgraph.graph import END, START, StateGraph
 from pinecone import Pinecone
@@ -141,7 +141,7 @@ class GraphState(TypedDict):
     original_question: str
     question: str
     generation: str
-    documents: List[str]
+    documents: List[str] = []
     transform_count: int
 
 
