@@ -51,7 +51,10 @@ async def handle_message(message: types.Message):
                 last_step = key
         await answer.delete()
         if value:
-            await message.answer(value["generation"], parse_mode="Markdown")
+            try:
+                await message.answer(value["generation"], parse_mode="Markdown")
+            except Exception as e:
+                await message.answer(value["generation"], parse_mode="HTML")
     except Exception as e:
         logging.error("Error processing user request: %s", e, exc_info=True)
         await message.answer(f"Произошла ошибка {e}. Пожалуйста, попробуйте еще раз.")
