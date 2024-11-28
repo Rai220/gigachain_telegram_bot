@@ -146,7 +146,7 @@ async def retrieve(state):
     index_name = "gigachain-test-gigar-newdb-giant"
     index = pc.Index(index_name)
     vector_store = PineconeVectorStore(index=index, embedding=embeddings)
-    retriever = vector_store.as_retriever(k=30)
+    retriever = vector_store.as_retriever(k=50, fetch_k=100)
     
     question = state["question"]
 
